@@ -7,12 +7,13 @@ export default function ResultadoVaga({ analise, score }) {
     <div className="resultado-container">
       <div className="glass-panel score-panel">
         <div className="score-header">
-          <div className="score-circle">
+          <div className="score-circle" aria-label={`${score.percentual}% de aderência`}>
             <span className="score-number">{score.percentual}%</span>
             <span className="score-label">Match</span>
           </div>
           <div className="score-info">
-            <h3>Recomendação: {score.recomendacao}</h3>
+            <p className="eyebrow">Próxima decisão</p>
+            <h3>{score.recomendacao}</h3>
             <p>{score.justificativa}</p>
           </div>
         </div>

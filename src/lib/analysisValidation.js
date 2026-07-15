@@ -3,6 +3,7 @@ const REQUIRED_TOP_LEVEL_KEYS = [
   'match_score',
   'curriculo_otimizado',
   'prep_entrevista',
+  'analise_aderencia',
 ];
 
 function isObject(value) {
@@ -28,7 +29,11 @@ export function validateAnalysisPayload(payload) {
   }
 
   const { vaga_analise: vagaAnalise, match_score: matchScore } = payload;
-  const { curriculo_otimizado: curriculoOtimizado, prep_entrevista: prepEntrevista } = payload;
+  const {
+    curriculo_otimizado: curriculoOtimizado,
+    prep_entrevista: prepEntrevista,
+    analise_aderencia: analiseAderencia,
+  } = payload;
 
   if (
     !hasString(vagaAnalise, 'titulo') ||
@@ -53,6 +58,7 @@ export function validateAnalysisPayload(payload) {
     !hasArray(curriculoOtimizado, 'experiencias_relevantes') ||
     !hasArray(curriculoOtimizado, 'skills_destacar') ||
     !hasArray(curriculoOtimizado, 'bullets_sugeridos') ||
+    !hasArray(curriculoOtimizado, 'reescritas_sugeridas') ||
     !hasArray(curriculoOtimizado, 'acoes_prioritarias') ||
     !hasArray(curriculoOtimizado, 'alertas_honestidade')
   ) {
@@ -64,6 +70,10 @@ export function validateAnalysisPayload(payload) {
     !hasArray(prepEntrevista, 'gaps_potenciais')
   ) {
     return { valid: false, message: 'A preparacao de entrevista veio incompleta.' };
+  }
+
+  if (!hasArray(analiseAderencia, 'requisitos') || !isObject(analiseAderencia.resumo)) {
+    return { valid: false, message: 'A matriz de aderencia veio incompleta.' };
   }
 
   return { valid: true, message: null };

@@ -57,7 +57,18 @@ npm run preview
 
 ## Privacidade
 
-MatchCV foi desenhado para ser privado por padrao. O curriculo e a descricao da vaga sao processados localmente durante o desenvolvimento, sem chamada para APIs externas. O curriculo base pode ser salvo no `localStorage` do navegador para conveniencia.
+MatchCV foi desenhado para ser privado por padrao. O curriculo base pode ser salvo no `localStorage` do navegador para conveniencia. O pipeline avançado usa apenas Ollama local e consultas públicas gratuitas opcionais; não utiliza chaves de API pagas.
+
+## Pipeline com Ollama local
+
+Opcionalmente, o MatchCV extrai dados da vaga localmente, consulta contexto público gratuito quando disponível e realiza uma única chamada ao Ollama instalado na máquina. Sem Ollama, o projeto mantém a análise heurística local.
+
+```bash
+ollama pull llama3.2:3b
+ollama serve
+```
+
+Use `.env.example` para alterar o modelo ou a URL local do Ollama. Falhas nas consultas públicas não interrompem a análise: o prompt final recebe a instrução para não especular sobre o contexto indisponível.
 
 ## Validacao
 

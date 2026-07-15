@@ -1,17 +1,10 @@
-import { analisarCurriculoComAgente } from './careerAgent.js';
+import { normalizeRequestBody, validateCurriculoVagaInput } from './validators.js';
+import { orchestrateAnalysis } from './analysisOrchestrator.js';
 
 function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(payload));
-}
-
-function normalizeBody(body) {
-  if (typeof body === 'string') {
-    return JSON.parse(body);
-  }
-
-  return body ?? {};
 }
 
 export default async function handler(req, res) {
@@ -21,27 +14,21 @@ export default async function handler(req, res) {
     return;
   }
 
-  let body;
   try {
-    body = normalizeBody(req.body);
-  } catch {
-    sendJson(res, 400, { error: 'JSON invalido.' });
-    return;
-  }
+    const body = normalizeRequestBody(req.body);
+    const validation = validateCurriculoVagaInput(body);
 
-  const curriculo = typeof body.curriculo === 'string' ? body.curriculo.trim() : '';
-  const vaga = typeof body.vaga === 'string' ? body.vaga.trim() : '';
+    if (!validation.valid) {
+      sendJson(res, 400, { error: validation.error });
+      return;
+    }
 
-  if (!curriculo || !vaga) {
-    sendJson(res, 400, { error: 'Preencha o curriculo base e a descricao da vaga.' });
-    return;
-  }
+    const { curriculo, vaga } = validation.data;
+    const analysis = await orchestrateAnalysis(curriculo, vaga);
 
-  try {
-    const analysis = analisarCurriculoComAgente(curriculo, vaga);
     sendJson(res, 200, analysis);
   } catch (error) {
-    console.error('Falha ao analisar vaga:', error.details || error);
+    console.error('Falha ao analisar vaga:', error.message);
     sendJson(res, error.statusCode || 500, {
       error: error.message || 'Erro ao analisar a vaga. Tente novamente.',
     });

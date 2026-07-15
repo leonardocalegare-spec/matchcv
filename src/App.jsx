@@ -5,6 +5,8 @@ import VagaInput from './components/VagaInput';
 import ResultadoVaga from './components/ResultadoVaga';
 import CurriculoOtimizado from './components/CurriculoOtimizado';
 import PrepEntrevista from './components/PrepEntrevista';
+import DiagnosticoAderencia from './components/DiagnosticoAderencia';
+import MatrizRequisitos from './components/MatrizRequisitos';
 import { analisarVaga } from './lib/analysisApi';
 
 const CURRICULO_STORAGE_KEY = 'matchcv_curriculo_base';
@@ -67,7 +69,7 @@ export default function App() {
         <VagaInput value={vaga} onChange={setVaga} />
       </div>
 
-      {erro && <div className="erro-banner">{erro}</div>}
+      {erro && <div className="erro-banner" role="alert">{erro}</div>}
 
       <button
         onClick={handleAnalisar}
@@ -80,11 +82,13 @@ export default function App() {
       </button>
 
       {resultado && (
-        <div className="resultado-wrapper">
+        <div className="resultado-wrapper" aria-live="polite">
           {resultado.provider_notice && (
             <div className="info-banner">{resultado.provider_notice}</div>
           )}
           <ResultadoVaga analise={resultado.vaga_analise} score={resultado.match_score} />
+          <DiagnosticoAderencia meta={resultado.meta} score={resultado.match_score} />
+          <MatrizRequisitos analise={resultado.analise_aderencia} />
           <CurriculoOtimizado curriculo={resultado.curriculo_otimizado} />
           <PrepEntrevista prep={resultado.prep_entrevista} />
         </div>

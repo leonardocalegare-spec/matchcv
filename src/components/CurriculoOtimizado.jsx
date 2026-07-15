@@ -1,4 +1,5 @@
 import React from 'react';
+import ReescritasCurriculo from './ReescritasCurriculo';
 
 export default function CurriculoOtimizado({ curriculo }) {
   if (!curriculo) return null;
@@ -22,6 +23,8 @@ export default function CurriculoOtimizado({ curriculo }) {
           </ul>
         </section>
       )}
+
+      <ReescritasCurriculo sugestoes={curriculo.reescritas_sugeridas} />
 
       {curriculo.experiencias_relevantes?.length > 0 && (
         <section className="curriculo-section">

@@ -59,6 +59,7 @@ export default function CurriculoInput({ value, onChange }) {
         onChange={(e) => onChange(e.target.value)}
         placeholder="Cole todo o seu currículo atual aqui (texto, markdown, etc) ou importe de um PDF..."
       />
+      <p className="input-hint">{value.trim().length > 0 ? `${value.trim().length} caracteres prontos para analisar` : 'Inclua experiências, projetos, formação e resultados.'}</p>
     </div>
   );
 }
