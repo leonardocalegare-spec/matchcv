@@ -1,98 +1,14 @@
-const TECH_SKILLS = [
-  'javascript',
-  'typescript',
-  'react',
-  'node',
-  'node.js',
-  'python',
-  'java',
-  'sql',
-  'postgresql',
-  'mysql',
-  'html',
-  'css',
-  'git',
-  'github',
-  'api',
-  'rest',
-  'docker',
-  'aws',
-  'azure',
-  'figma',
-  'excel',
-  'power bi',
-  'scrum',
-  'kanban',
-  'automacao',
-  'automação',
-  'logica',
-  'lógica',
-  'programacao',
-  'programação',
-  'inteligencia artificial',
-  'inteligência artificial',
-  'ia',
-];
-
-const SOFT_SKILLS = [
-  'comunicacao',
-  'comunicação',
-  'trabalho em equipe',
-  'colaboracao',
-  'colaboração',
-  'organizacao',
-  'organização',
-  'proatividade',
-  'aprendizado',
-  'resolucao de problemas',
-  'resolução de problemas',
-  'analitico',
-  'analítico',
-];
-
-const LANGUAGE_SKILLS = [
-  'ingles',
-  'inglês',
-  'espanhol',
-  'portugues',
-  'português',
-];
-
-const REQUIREMENT_MARKERS = [
-  'requisito',
-  'necessario',
-  'necessário',
-  'obrigatorio',
-  'obrigatório',
-  'conhecimento',
-  'experiencia',
-  'experiência',
-  'vivencia',
-  'vivência',
-  'dominio',
-  'domínio',
-  'formacao',
-  'formação',
-  'cursando',
-  'superior',
-];
-
-const DESIRABLE_MARKERS = [
-  'desejavel',
-  'desejável',
-  'diferencial',
-  'plus',
-  'nice to have',
-  'sera um diferencial',
-  'será um diferencial',
-];
-
-const SENIORITY_WEIGHT = {
-  estágio: 100,
-  junior: 85,
-  pleno: 45,
-  senior: 20,
-};
+import { detectCompany } from './shared/companyDetection.js';
+import { detectRoleProfile } from './data/roleProfiles.js';
+import {
+  ACTION_VERBS,
+  ALL_SKILLS,
+  ALL_SYNONYMS,
+  DESIRABLE_MARKERS,
+  REQUIREMENT_MARKERS,
+  RESPONSIBILITY_MARKERS,
+  SENIORITY_ORDER,
+} from './analysis/lexicon.js';
 
 function normalize(value) {
   return String(value)
@@ -125,42 +41,8 @@ function splitSentences(text) {
 
 function titleCaseSkill(skill) {
   const normalized = normalize(skill);
-  const labels = {
-    javascript: 'JavaScript',
-    typescript: 'TypeScript',
-    react: 'React',
-    node: 'Node.js',
-    'node.js': 'Node.js',
-    python: 'Python',
-    java: 'Java',
-    sql: 'SQL',
-    postgresql: 'PostgreSQL',
-    mysql: 'MySQL',
-    html: 'HTML',
-    css: 'CSS',
-    git: 'Git',
-    github: 'GitHub',
-    api: 'APIs',
-    rest: 'REST',
-    docker: 'Docker',
-    aws: 'AWS',
-    azure: 'Azure',
-    figma: 'Figma',
-    excel: 'Excel',
-    'power bi': 'Power BI',
-    scrum: 'Scrum',
-    kanban: 'Kanban',
-    automacao: 'Automação',
-    logica: 'Lógica de programação',
-    programacao: 'Programação',
-    'inteligencia artificial': 'Inteligência Artificial',
-    ia: 'IA',
-    ingles: 'Inglês',
-    espanhol: 'Espanhol',
-    portugues: 'Português',
-  };
-
-  return labels[normalized] || skill;
+  const matchedSkill = ALL_SKILLS.find((skill) => skill.synonyms.includes(normalized));
+  return matchedSkill ? matchedSkill.label : skill;
 }
 
 function includesTerm(text, term) {
@@ -174,25 +56,47 @@ function escapeRegExp(value) {
 }
 
 function extractSkills(text) {
-  return unique([...TECH_SKILLS, ...SOFT_SKILLS, ...LANGUAGE_SKILLS]
-    .filter((skill) => includesTerm(text, skill))
+  return unique(ALL_SYNONYMS
+    .filter((synonym) => includesTerm(text, synonym))
     .map(titleCaseSkill));
 }
 
 function detectLevel(vagaText) {
   const normalized = normalize(vagaText);
 
-  if (/\bestagio\b|\bestagiario\b|\bintern\b/.test(normalized)) return 'estágio';
+  if (/\bestagio\b|\bestagiario\b|\bintern\b|primeira experiencia|sem experiencia/.test(normalized)) return 'estágio';
+  if (/\bsenior\b|\bsr\b|\blider\b|\blead\b|\bespecialista\b|liderou equipe|arquitetura|mentor|(?:4|5|6|7|8|9|10)\+?\s*anos/.test(normalized)) return 'senior';
+  if (/\bpleno\b|\bmid\b|(?:2|3)\+?\s*anos/.test(normalized)) return 'pleno';
   if (/\bjunior\b|\bjr\b|\btrainee\b/.test(normalized)) return 'junior';
-  if (/\bpleno\b|\bmid\b/.test(normalized)) return 'pleno';
-  if (/\bsenior\b|\bsr\b|\blider\b|\blead\b|\bespecialista\b/.test(normalized)) return 'senior';
 
-  return 'junior';
+  return 'não identificado';
+}
+
+function detectResumeLevel(curriculoText) {
+  const normalized = normalize(curriculoText);
+  const years = [...normalized.matchAll(/(\d{1,2})\+?\s*anos?\s+(?:de\s+)?experiencia/g)]
+    .map((match) => Number(match[1]))
+    .filter(Number.isFinite);
+  const maxYears = years.length > 0 ? Math.max(...years) : null;
+
+  if (/\bsenior\b|\bsr\b|\btech lead\b|\blider(?:ei|anca|ança)?\b|\bespecialista\b/.test(normalized) || maxYears >= 5) return 'senior';
+  if (/\bpleno\b|\bmid(?:-level)?\b/.test(normalized) || maxYears >= 2) return 'pleno';
+  if (/\bjunior\b|\bjr\b|\btrainee\b/.test(normalized)) return 'junior';
+  if (/\bestagio\b|\bestagiario\b|\bintern\b/.test(normalized)) return 'estágio';
+  return null;
+}
+
+function calculateSeniorityAlignment(jobLevel, resumeLevel) {
+  if (!resumeLevel || !(jobLevel in SENIORITY_ORDER)) return null;
+  const difference = SENIORITY_ORDER[resumeLevel] - SENIORITY_ORDER[jobLevel];
+  if (difference >= 0) return 100;
+  if (difference === -1) return 60;
+  return 20;
 }
 
 function detectTitle(vaga) {
-  const lines = splitLines(vaga);
-  const titleLine = lines.find((line) => {
+  const candidates = unique([...splitLines(vaga), ...splitSentences(vaga)]);
+  const titleLine = candidates.find((line) => {
     const normalized = normalize(line);
     return line.length >= 6 && line.length <= 90 && (
       normalized.includes('vaga') ||
@@ -205,13 +109,17 @@ function detectTitle(vaga) {
     );
   });
 
-  return titleLine || lines.find((line) => line.length < 90) || 'Vaga analisada';
+  const fallback = candidates.find((line) => line.length < 90);
+  const detected = titleLine || fallback;
+  if (!detected) return 'Vaga analisada';
+
+  return detected
+    .replace(/^vaga\s*(?:(?:para|de)\b)?\s*[:-]?\s*/i, '')
+    .replace(/\s+(?:na|no)\s+[A-ZÀ-Ú][\wÀ-ú&.-]*(?:\s+[A-ZÀ-Ú][\wÀ-ú&.-]*){0,2}.*$/, '')
+    .trim() || 'Vaga analisada';
 }
 
-function detectCompany(vaga) {
-  const companyMatch = vaga.match(/(?:empresa|companhia|organiza[cç][aã]o)\s*[:-]\s*([^\n]+)/i);
-  return companyMatch?.[1]?.trim() || 'Empresa nao identificada';
-}
+// detectCompany was moved to companyDetection.js
 
 function sentenceHasAnyMarker(sentence, markers) {
   const normalized = normalize(sentence);
@@ -229,6 +137,13 @@ function extractRequirementSentences(vaga, desirable = false) {
   ))).slice(0, 8);
 }
 
+function extractResponsibilities(vaga) {
+  return unique(splitSentences(vaga).filter((sentence) => (
+    sentenceHasAnyMarker(sentence, RESPONSIBILITY_MARKERS) ||
+    /^(planejar|desenvolver|analisar|gerenciar|coordenar|atender|acompanhar|executar|criar|implementar|realizar|apoiar|garantir|conduzir|controlar)\b/i.test(sentence)
+  ))).slice(0, 6);
+}
+
 function inferRequirementsFromSkills(skills) {
   return skills.map((skill) => `Conhecimento em ${skill}`);
 }
@@ -237,10 +152,30 @@ function findEvidence(curriculo, skills) {
   const sentences = splitSentences(curriculo);
 
   return skills.map((skill) => {
-    const evidence = sentences.find((sentence) => includesTerm(sentence, skill));
+    // Find matching synonyms for this skill label
+    const skillData = ALL_SKILLS.find((item) => item.label === skill);
+    const searchTerms = skillData ? skillData.synonyms : [skill];
+
+    const evidenceIndex = sentences.findIndex((sentence) =>
+      searchTerms.some((term) => includesTerm(sentence, term))
+    );
+    let evidence = evidenceIndex >= 0 ? sentences[evidenceIndex] : null;
+    const nextSentence = evidenceIndex >= 0 ? sentences[evidenceIndex + 1] : null;
+    if (evidence && !hasMetric(evidence) && nextSentence && hasMetric(nextSentence)) {
+      evidence = `${evidence}. ${nextSentence}`;
+    }
+
+    let score = 0;
+    if (evidence) {
+      score += 50;
+      if (hasActionVerb(evidence)) score += 25;
+      if (hasMetric(evidence)) score += 25;
+    }
+
     return {
       skill,
       evidence: evidence || null,
+      score
     };
   });
 }
@@ -251,29 +186,46 @@ function hasMetric(sentence) {
 
 function hasActionVerb(sentence) {
   const normalized = normalize(sentence);
-  return [
-    'desenvolvi',
-    'criei',
-    'implementei',
-    'automatizei',
-    'construi',
-    'liderei',
-    'participei',
-    'analisei',
-    'otimizei',
-    'integrei',
-    'documentei',
-  ].some((verb) => normalized.includes(verb));
+  return ACTION_VERBS.some((verb) => normalized.includes(verb));
 }
 
-function buildRequirementMatrix(vagaSkills, matchedEvidence, desirableSentences) {
+function isCriticalRequirement(skill, vaga) {
+  const title = detectTitle(vaga);
+  const lines = splitLines(vaga).slice(0, 5);
+  const firstLines = lines.join(' ');
+
+  if (includesTerm(title, skill) || includesTerm(firstLines, skill)) {
+    return true;
+  }
+
+  const skillData = ALL_SKILLS.find((item) => item.label === skill);
+  const searchTerms = skillData ? skillData.synonyms : [skill];
+  const normalizedVaga = normalize(vaga);
+  let count = 0;
+
+  for (const term of searchTerms) {
+    const regex = new RegExp(`(^|[^a-z0-9])${escapeRegExp(normalize(term))}([^a-z0-9]|$)`, 'g');
+    const matches = normalizedVaga.match(regex);
+    if (matches) {
+      count += matches.length;
+    }
+  }
+
+  return count >= 3;
+}
+
+function buildRequirementMatrix(vagaSkills, matchedEvidence, desirableSentences, vaga) {
   const desirableText = desirableSentences.join(' ');
 
   return vagaSkills.map((skill) => {
-    const evidence = matchedEvidence.find((item) => item.skill === skill)?.evidence || null;
+    const evidenceObj = matchedEvidence.find((item) => item.skill === skill);
+    const evidence = evidenceObj?.evidence || null;
     const category = includesTerm(desirableText, skill) ? 'desejável' : 'obrigatório';
+    const isCritical = category === 'obrigatório' && isCriticalRequirement(skill, vaga);
+
     const hasStrongEvidence = evidence && hasActionVerb(evidence) && hasMetric(evidence);
     const status = !evidence ? 'ausente' : hasStrongEvidence ? 'comprovado' : 'parcial';
+    const score = evidenceObj?.score || 0;
 
     const recommendation = status === 'ausente'
       ? `Se houver experiência real, inclua um projeto, curso ou entrega que comprove ${skill}.`
@@ -281,18 +233,68 @@ function buildRequirementMatrix(vagaSkills, matchedEvidence, desirableSentences)
         ? `Reescreva a evidência de ${skill} com ação, contexto e impacto mensurável.`
         : `Destaque ${skill} no resumo e em um dos primeiros bullets do currículo.`;
 
-    return { skill, category, status, evidence, recommendation };
+    return { skill, category, status, evidence, recommendation, isCritical, score };
   });
+}
+
+function buildTextRequirementMatrix(requiredSentences, desirableSentences, curriculo, vagaSkills) {
+  const stopwords = new Set([
+    'para', 'com', 'que', 'uma', 'por', 'dos', 'das', 'nos', 'nas', 'requisito', 'requisitos',
+    'necessario', 'necessaria', 'obrigatorio', 'obrigatoria', 'desejavel', 'diferencial',
+    'conhecimento', 'experiencia', 'vivencia', 'ter', 'ser', 'em', 'de', 'do', 'da', 'e', 'ou',
+  ]);
+  const normalizedResume = normalize(curriculo);
+
+  return [...requiredSentences.map((text) => ({ text, category: 'obrigatório' })),
+    ...desirableSentences.map((text) => ({ text, category: 'desejável' }))]
+    .filter(({ text }) => !vagaSkills.some((skill) => includesTerm(text, skill)))
+    .slice(0, 6)
+    .map(({ text, category }) => {
+      const keywords = unique(normalize(text).match(/[a-z0-9+#.]{3,}/g) || [])
+        .filter((word) => !stopwords.has(word))
+        .slice(0, 8);
+      const matchedKeywords = keywords.filter((word) => includesTerm(normalizedResume, word));
+      const evidence = splitSentences(curriculo).find((sentence) => (
+        matchedKeywords.filter((word) => includesTerm(sentence, word)).length >= Math.min(2, keywords.length)
+      )) || null;
+      const coverage = keywords.length > 0 ? matchedKeywords.length / keywords.length : 0;
+      const status = evidence && coverage >= 0.6 ? 'comprovado' : coverage > 0 ? 'parcial' : 'ausente';
+      const recommendation = status === 'ausente'
+        ? 'Inclua este requisito somente se houver formação, experiência ou disponibilidade real que o comprove.'
+        : status === 'parcial'
+          ? 'Torne esta evidência explícita no currículo, preservando apenas fatos verificáveis.'
+          : 'Mantenha esta evidência em posição visível no currículo.';
+
+      return {
+        skill: text.length > 110 ? `${text.slice(0, 107)}...` : text,
+        category,
+        status,
+        evidence,
+        recommendation,
+        isCritical: category === 'obrigatório',
+        score: Math.round(coverage * 100),
+        kind: 'requisito_textual',
+      };
+    });
 }
 
 function averageCoverage(requirements) {
   if (requirements.length === 0) return 0;
 
   const valueByStatus = { comprovado: 1, parcial: 0.6, ausente: 0 };
-  return requirements.reduce((total, item) => total + valueByStatus[item.status], 0) / requirements.length;
+  let totalWeight = 0;
+  let weightedScore = 0;
+
+  for (const item of requirements) {
+    const weight = item.isCritical ? 2 : 1;
+    totalWeight += weight;
+    weightedScore += valueByStatus[item.status] * weight;
+  }
+
+  return totalWeight > 0 ? weightedScore / totalWeight : 0;
 }
 
-function buildScoreBreakdown({ requirements, level }) {
+function buildScoreBreakdown({ requirements, level, resumeLevel }) {
   const mandatoryRequirements = requirements.filter((item) => item.category === 'obrigatório');
   const desirableRequirements = requirements.filter((item) => item.category === 'desejável');
   const mandatoryCoverage = averageCoverage(mandatoryRequirements);
@@ -303,14 +305,17 @@ function buildScoreBreakdown({ requirements, level }) {
   const evidenceCoverage = requirements.length > 0
     ? requirements.filter((item) => item.status === 'comprovado').length / requirements.length
     : 0;
-  const seniorityScore = SENIORITY_WEIGHT[level] ?? 70;
-  const rawScore = (skillCoverage * 65) + (evidenceCoverage * 20) + (seniorityScore * 0.15);
+  const seniorityScore = calculateSeniorityAlignment(level, resumeLevel);
+  const rawScore = seniorityScore === null
+    ? (skillCoverage * 75) + (evidenceCoverage * 25)
+    : (skillCoverage * 65) + (evidenceCoverage * 20) + (seniorityScore * 0.15);
 
   return {
     percentual: clamp(Math.round(rawScore), 0, 100),
     cobertura_skills: Math.round(skillCoverage * 100),
     cobertura_evidencias: Math.round(evidenceCoverage * 100),
     adequacao_senioridade: seniorityScore,
+    senioridade_curriculo: resumeLevel,
     cobertura_obrigatorios: Math.round(mandatoryCoverage * 100),
     cobertura_desejaveis: Math.round(desirableCoverage * 100),
   };
@@ -322,26 +327,36 @@ function buildConfidence(vagaSkills, requiredSentences) {
   return 'baixa';
 }
 
+function buildScoreNarrative(score) {
+  if (score < 50) {
+    return 'Isso mostra que seu currículo ainda não comprova boa parte do que a vaga pede – não é uma nota final, é um ponto de partida. Veja abaixo exatamente o que fortalecer.';
+  }
+  if (score < 80) {
+    return 'Seu currículo já comprova boa parte do que a vaga pede. Os ajustes abaixo podem aumentar essa aderência antes de você se candidatar.';
+  }
+  return 'Seu currículo já comprova a maior parte dos requisitos desta vaga. Reforce os pontos abaixo para deixar isso ainda mais evidente no processo seletivo.';
+}
+
 function recommendationForScore(score) {
   if (score >= 80) return 'CANDIDATAR';
   if (score >= 50) return 'CONSIDERAR';
-  return 'PULAR';
+  return 'FORTALECER';
 }
 
-function buildSummary(matchedSkills, missingSkills, level) {
+function buildSummary(matchedSkills, missingSkills, level, roleProfile) {
   if (matchedSkills.length === 0) {
-    return `Perfil com aderencia baixa para uma vaga de nivel ${level}. Antes de candidatar, deixe mais explicitas as tecnologias, projetos e resultados relacionados aos requisitos da vaga.`;
+    return `O currículo ainda apresenta poucas evidências claras para uma posição de nível ${level} em ${roleProfile.label}. Reforce ${roleProfile.focus}, sempre usando fatos reais.`;
   }
 
   const strengths = matchedSkills.slice(0, 5).join(', ');
   const gapText = missingSkills.length > 0
-    ? ` Ainda precisa reforcar ${missingSkills.slice(0, 3).join(', ')}.`
-    : ' Os principais requisitos tecnicos detectados aparecem no curriculo.';
+    ? ` Ainda precisa reforçar ${missingSkills.slice(0, 3).join(', ')}.`
+    : ' As principais competências detectadas aparecem no currículo.';
 
-  return `Perfil com evidencias em ${strengths}, com aderencia relevante para uma vaga de nivel ${level}.${gapText}`;
+  return `Perfil com evidências em ${strengths} para uma oportunidade de nível ${level} em ${roleProfile.label}.${gapText}`;
 }
 
-function buildRelevantExperiences(curriculo, matchedEvidence, missingSkills) {
+function buildRelevantExperiences(curriculo, matchedEvidence, missingSkills, roleProfile) {
   const evidenceBullets = matchedEvidence
     .filter((item) => item.evidence)
     .slice(0, 5)
@@ -352,12 +367,12 @@ function buildRelevantExperiences(curriculo, matchedEvidence, missingSkills) {
   }
 
   const genericBullets = [
-    'Adicionar bullets com problema, acao, tecnologia usada e resultado mensuravel.',
-    'Priorizar projetos que comprovem aderencia direta aos requisitos tecnicos da vaga.',
+    `Adicionar bullets com contexto, ação, método e resultado relevante para ${roleProfile.label}.`,
+    'Priorizar experiências que comprovem aderência direta às responsabilidades da vaga.',
   ];
 
   if (missingSkills.length > 0) {
-    genericBullets.push(`Criar ou destacar evidencia real relacionada a ${missingSkills.slice(0, 3).join(', ')}.`);
+    genericBullets.push(`Criar ou destacar evidência real relacionada a ${missingSkills.slice(0, 3).join(', ')}.`);
   }
 
   return unique([...evidenceBullets, ...genericBullets]).slice(0, 5);
@@ -375,7 +390,7 @@ function buildSuggestedBullets(matchedEvidence, missingSkills, level) {
         ? 'preservando o verbo de ação'
         : 'começando com um verbo de ação forte';
 
-      return `${actionHint}, reescreva este ponto para destacar ${item.skill}, contexto do projeto e decisão técnica, ${metricHint}: "${item.evidence}"`;
+      return `${actionHint}, reescreva este ponto para destacar ${item.skill}, contexto, método utilizado e resultado, ${metricHint}: "${item.evidence}"`;
     });
 
   const gapBullet = missingSkills.length > 0
@@ -389,16 +404,16 @@ function buildSuggestedBullets(matchedEvidence, missingSkills, level) {
   return unique([...bulletsFromEvidence, ...gapBullet, ...seniorityBullet]).slice(0, 5);
 }
 
-function buildWritingSuggestions(matchedEvidence) {
+function buildWritingSuggestions(matchedEvidence, roleProfile) {
   return matchedEvidence
     .filter((item) => item.evidence)
     .slice(0, 4)
     .map((item) => ({
       skill: item.skill,
       original: item.evidence,
-      impacto: `Entreguei [solução real] com ${item.skill} para [objetivo do projeto], gerando [resultado mensurável real].`,
-      tecnico: `Utilizei ${item.skill} para [entrega real], aplicando [decisão técnica real] e garantindo [resultado observável].`,
-      direto: `Atuei com ${item.skill} em [projeto ou experiência real], contribuindo para [resultado real].`,
+      impacto: `Contribuí com ${item.skill} em [contexto real], realizando [ação comprovável] e gerando [resultado real].`,
+      tecnico: `Apliquei ${item.skill} em [situação real], seguindo [método ou processo real] para alcançar [resultado observável].`,
+      direto: `Atuei com ${item.skill} em [experiência real], com foco em ${roleProfile.focus}.`,
       orientacao: hasMetric(item.evidence)
         ? 'O texto já menciona um resultado. Preserve o dado ao completar o modelo.'
         : 'Inclua uma métrica apenas se ela estiver documentada ou puder ser confirmada por você.',
@@ -431,23 +446,27 @@ function buildHonestyAlerts(missingSkills, matchedEvidence) {
   return unique([...alerts, ...weakEvidence]).slice(0, 5);
 }
 
-function buildInterviewQuestions(matchedSkills, missingSkills, level) {
+function buildInterviewQuestions(matchedSkills, missingSkills, level, roleProfile) {
   const questions = [
     {
-      pergunta: 'Qual projeto do seu curriculo melhor comprova aderencia a esta vaga?',
+      pergunta: 'Qual experiência do seu currículo melhor comprova aderência a esta vaga?',
       dica_resposta: matchedSkills.length > 0
-        ? `Escolha um projeto com ${matchedSkills.slice(0, 3).join(', ')} e explique contexto, decisao tecnica e resultado.`
-        : 'Escolha um projeto real e conecte explicitamente suas atividades aos requisitos da vaga.',
+        ? `Escolha uma experiência com ${matchedSkills.slice(0, 3).join(', ')} e explique contexto, ação, método e resultado.`
+        : 'Escolha uma experiência real e conecte explicitamente suas atividades aos requisitos da vaga.',
     },
     {
-      pergunta: 'Como voce aprende e aplica tecnologias novas quando encontra um requisito que ainda nao domina?',
+      pergunta: 'Como você aprende e aplica uma competência nova quando encontra um requisito que ainda não domina?',
       dica_resposta: missingSkills.length > 0
-        ? `Use ${missingSkills[0]} como exemplo: seja honesto sobre o gap e mostre um plano pratico de estudo/aplicacao.`
-        : 'Mostre um exemplo real de aprendizado rapido e aplicacao em projeto.',
+        ? `Use ${missingSkills[0]} como exemplo: seja honesto sobre a lacuna e mostre um plano prático de aprendizado e aplicação.`
+        : 'Mostre um exemplo real de aprendizado rápido e aplicação no trabalho.',
     },
     {
-      pergunta: `Por que voce faz sentido para uma posicao de nivel ${level}?`,
-      dica_resposta: 'Conecte senioridade, autonomia, base tecnica e exemplos reais sem exagerar experiencia.',
+      pergunta: `Por que você faz sentido para uma posição de nível ${level}?`,
+      dica_resposta: 'Conecte senioridade, autonomia, competências relevantes e exemplos reais sem exagerar experiência.',
+    },
+    {
+      pergunta: `Conte uma situação que demonstre ${roleProfile.interviewFocus}.`,
+      dica_resposta: 'Estruture a resposta em contexto, responsabilidade, ação e resultado. Se não houver métrica, descreva uma mudança observável.',
     },
   ];
 
@@ -456,15 +475,15 @@ function buildInterviewQuestions(matchedSkills, missingSkills, level) {
 
 function buildGaps(missingSkills, requiredSentences, level) {
   const skillGaps = missingSkills.map((skill) => (
-    `A vaga menciona ${skill}, mas isso nao aparece claramente no curriculo. Inclua apenas se houver evidencia real.`
+    `A vaga menciona ${skill}, mas isso não aparece claramente no currículo. Inclua apenas se houver evidência real.`
   ));
 
   const seniorityGap = ['pleno', 'senior'].includes(level)
-    ? [`A vaga parece ser de nivel ${level}; valide se sua experiencia comprovada sustenta esse nivel antes de investir tempo.`]
+    ? [`A vaga parece ser de nível ${level}; valide se sua experiência comprovada sustenta esse nível antes de investir tempo.`]
     : [];
 
   const evidenceGap = requiredSentences.length === 0
-    ? ['A descricao da vaga tem poucos requisitos estruturados; revise manualmente para nao depender apenas da extracao automatica.']
+    ? ['A descrição da vaga tem poucos requisitos estruturados; revise manualmente para não depender apenas da extração automática.']
     : [];
 
   return unique([...skillGaps, ...seniorityGap, ...evidenceGap]).slice(0, 6);
@@ -472,52 +491,62 @@ function buildGaps(missingSkills, requiredSentences, level) {
 
 function buildJustification(score, matchedSkills, missingSkills, level) {
   const recommendation = recommendationForScore(score);
-  const matched = matchedSkills.length > 0 ? matchedSkills.join(', ') : 'nenhuma skill tecnica detectada em comum';
-  const missing = missingSkills.length > 0 ? missingSkills.join(', ') : 'sem gaps tecnicos explicitos detectados';
+  const matched = matchedSkills.length > 0 ? matchedSkills.join(', ') : 'nenhuma competência explícita detectada em comum';
+  const missing = missingSkills.length > 0 ? missingSkills.join(', ') : 'sem lacunas explícitas detectadas';
 
-  return `${recommendation}: score local baseado em cobertura de skills, evidencias textuais e senioridade (${level}). Pontos fortes: ${matched}. Pontos a reforcar: ${missing}.`;
+  return `${recommendation}: score baseado em cobertura de competências, evidências textuais e senioridade (${level}). Pontos fortes: ${matched}. Pontos a reforçar: ${missing}.`;
 }
 
-export function analisarCurriculoComAgente(curriculo, vaga) {
+export function analisarCurriculoComAgente(curriculo, vaga, empresaManual = null) {
   const level = detectLevel(vaga);
+  const roleProfile = detectRoleProfile(vaga);
+  const resumeLevel = detectResumeLevel(curriculo);
   const curriculoSkills = extractSkills(curriculo);
   const vagaSkills = extractSkills(vaga);
   const matchedSkills = vagaSkills.filter((skill) => curriculoSkills.includes(skill));
   const missingSkills = vagaSkills.filter((skill) => !curriculoSkills.includes(skill));
   const requiredSentences = extractRequirementSentences(vaga, false);
   const desirableSentences = extractRequirementSentences(vaga, true);
+  const responsibilities = extractResponsibilities(vaga);
   const matchedEvidence = findEvidence(curriculo, matchedSkills);
-  const requirements = buildRequirementMatrix(vagaSkills, matchedEvidence, desirableSentences);
-  const scoreDetails = buildScoreBreakdown({ requirements, level });
+  const skillRequirements = buildRequirementMatrix(vagaSkills, matchedEvidence, desirableSentences, vaga);
+  const textRequirements = buildTextRequirementMatrix(requiredSentences, desirableSentences, curriculo, vagaSkills);
+  const requirements = [...skillRequirements, ...textRequirements];
+  const scoreDetails = buildScoreBreakdown({ requirements, level, resumeLevel });
   const score = scoreDetails.percentual;
 
   return {
     vaga_analise: {
       titulo: detectTitle(vaga),
-      empresa: detectCompany(vaga),
+      empresa: detectCompany(vaga, empresaManual),
       requisitos_obrigatorios: requiredSentences.length > 0
         ? requiredSentences
         : inferRequirementsFromSkills(vagaSkills),
       requisitos_desejaveis: desirableSentences,
+      responsabilidades: responsibilities,
       nivel_experiencia: level,
+      familia_cargo: roleProfile.id,
+      familia_cargo_label: roleProfile.label,
+      foco_cargo: roleProfile.focus,
     },
     match_score: {
       percentual: score,
       recomendacao: recommendationForScore(score),
       justificativa: buildJustification(score, matchedSkills, missingSkills, level),
       detalhamento: scoreDetails,
+      leitura_amigavel: buildScoreNarrative(score),
     },
     curriculo_otimizado: {
-      resumo_executivo: buildSummary(matchedSkills, missingSkills, level),
-      experiencias_relevantes: buildRelevantExperiences(curriculo, matchedEvidence, missingSkills),
+      resumo_executivo: buildSummary(matchedSkills, missingSkills, level, roleProfile),
+      experiencias_relevantes: buildRelevantExperiences(curriculo, matchedEvidence, missingSkills, roleProfile),
       bullets_sugeridos: buildSuggestedBullets(matchedEvidence, missingSkills, level),
-      reescritas_sugeridas: buildWritingSuggestions(matchedEvidence),
+      reescritas_sugeridas: buildWritingSuggestions(matchedEvidence, roleProfile),
       acoes_prioritarias: buildPriorityActions(requirements),
       alertas_honestidade: buildHonestyAlerts(missingSkills, matchedEvidence),
       skills_destacar: matchedSkills,
     },
     prep_entrevista: {
-      perguntas_esperadas: buildInterviewQuestions(matchedSkills, missingSkills, level),
+      perguntas_esperadas: buildInterviewQuestions(matchedSkills, missingSkills, level, roleProfile),
       gaps_potenciais: buildGaps(missingSkills, requiredSentences, level),
     },
     analise_aderencia: {
@@ -529,7 +558,7 @@ export function analisarCurriculoComAgente(curriculo, vaga) {
       },
     },
     provider: 'local-agent',
-    provider_notice: 'Analise 100% local gerada pelo agente MatchCV. Nenhuma chave, API externa ou chamada de rede foi usada.',
+    provider_notice: 'Análise local gerada pelo agente VagaClara.',
     meta: {
       curriculo_skills_detectadas: curriculoSkills,
       vaga_skills_detectadas: vagaSkills,
@@ -537,6 +566,8 @@ export function analisarCurriculoComAgente(curriculo, vaga) {
       skills_ausentes: missingSkills,
       evidencias_encontradas: matchedEvidence.filter((item) => item.evidence).length,
       confianca_analise: buildConfidence(vagaSkills, requiredSentences),
+      senioridade_curriculo_detectada: resumeLevel,
+      familia_cargo: roleProfile.id,
     },
   };
 }

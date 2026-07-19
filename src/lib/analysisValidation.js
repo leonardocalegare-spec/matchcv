@@ -40,6 +40,8 @@ export function validateAnalysisPayload(payload) {
     !hasString(vagaAnalise, 'empresa') ||
     !hasArray(vagaAnalise, 'requisitos_obrigatorios') ||
     !hasArray(vagaAnalise, 'requisitos_desejaveis') ||
+    !hasArray(vagaAnalise, 'responsabilidades') ||
+    !hasString(vagaAnalise, 'familia_cargo_label') ||
     !hasString(vagaAnalise, 'nivel_experiencia')
   ) {
     return { valid: false, message: 'A analise da vaga veio incompleta.' };
@@ -74,6 +76,28 @@ export function validateAnalysisPayload(payload) {
 
   if (!hasArray(analiseAderencia, 'requisitos') || !isObject(analiseAderencia.resumo)) {
     return { valid: false, message: 'A matriz de aderencia veio incompleta.' };
+  }
+
+  if (payload.llm_analysis) {
+    const llm = payload.llm_analysis;
+    const validTips = Array.isArray(llm.dicas) && llm.dicas.every((tip) => (
+      isObject(tip) && hasString(tip, 'dica') && hasString(tip, 'motivo') && ['mercado', 'vaga', 'empresa'].includes(tip.fonte)
+    ));
+    if (!isObject(llm) || !validTips || !hasString(llm, 'reformulacao_sugerida') || !hasArray(llm, 'faltando_no_curriculo')) {
+      return { valid: false, message: 'O complemento do Ollama veio incompleto.' };
+    }
+  }
+
+  if (payload.ats_analysis) {
+    const ats = payload.ats_analysis;
+    if (
+      typeof ats.overall_score !== 'number' ||
+      typeof ats.job_match_score !== 'number' ||
+      !Array.isArray(ats.factors) ||
+      !isObject(ats.document_readability)
+    ) {
+      return { valid: false, message: 'A análise ATS veio incompleta.' };
+    }
   }
 
   return { valid: true, message: null };

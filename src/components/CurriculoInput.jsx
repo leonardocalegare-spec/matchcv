@@ -1,26 +1,35 @@
 import React, { useRef, useState } from 'react';
-import { extrairTextoDePDF } from '../lib/pdfParser';
+import { extrairDocumentoDePDF } from '../lib/pdfParser';
 
-export default function CurriculoInput({ value, onChange }) {
+export default function CurriculoInput({
+  value,
+  onChange,
+  salvarCurriculo,
+  onSalvarCurriculoChange,
+  consentimentoAnalise,
+  onConsentimentoChange,
+}) {
   const fileInputRef = useRef(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      alert('Por favor, selecione um arquivo PDF.');
+      setUploadError('Por favor, selecione um arquivo PDF.');
       return;
     }
 
+    setUploadError('');
     setIsExtracting(true);
 
     try {
-      const textoExtraido = await extrairTextoDePDF(file);
-      onChange(textoExtraido);
+      const documento = await extrairDocumentoDePDF(file);
+      onChange(documento.text, documento.diagnostics);
     } catch (error) {
-      alert(error.message || 'Falha ao extrair o texto do PDF.');
+      setUploadError(error.message || 'Falha ao extrair o texto do PDF.');
     } finally {
       setIsExtracting(false);
       // Reseta o input para permitir selecionar o mesmo arquivo novamente
@@ -30,8 +39,8 @@ export default function CurriculoInput({ value, onChange }) {
 
   return (
     <div className="glass-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <label htmlFor="curriculo" className="label" style={{ marginBottom: 0 }}>Seu Currículo Base</label>
+      <div className="input-heading-row">
+        <label htmlFor="curriculo" className="label input-heading-label">Seu Currículo Base</label>
         
         <div>
           <input 
@@ -39,7 +48,7 @@ export default function CurriculoInput({ value, onChange }) {
             accept=".pdf" 
             ref={fileInputRef} 
             onChange={handleFileUpload}
-            style={{ display: 'none' }}
+            className="visually-hidden"
             id="pdf-upload"
           />
           <button 
@@ -60,6 +69,29 @@ export default function CurriculoInput({ value, onChange }) {
         placeholder="Cole todo o seu currículo atual aqui (texto, markdown, etc) ou importe de um PDF..."
       />
       <p className="input-hint">{value.trim().length > 0 ? `${value.trim().length} caracteres prontos para analisar` : 'Inclua experiências, projetos, formação e resultados.'}</p>
+      {uploadError && <p className="inline-error" role="alert">{uploadError}</p>}
+      <label className="privacy-option">
+        <input
+          type="checkbox"
+          checked={salvarCurriculo}
+          onChange={(event) => onSalvarCurriculoChange(event.target.checked)}
+        />
+        Salvar este currículo somente neste navegador
+      </label>
+      <div className="privacy-consent">
+        <label className="privacy-option">
+          <input
+            type="checkbox"
+            checked={consentimentoAnalise}
+            onChange={(event) => onConsentimentoChange(event.target.checked)}
+          />
+          Autorizo o processamento temporário do texto para gerar esta análise
+        </label>
+        <details>
+          <summary>Como seus dados são usados</summary>
+          <p>O PDF e a comparação semântica são processados no navegador. O texto é enviado à API da aplicação apenas durante a análise determinística e não é salvo em banco de dados. Informações públicas da empresa só são consultadas quando você autoriza na próxima etapa.</p>
+        </details>
+      </div>
     </div>
   );
 }

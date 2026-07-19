@@ -1,11 +1,6 @@
 import { normalizeRequestBody, validateCurriculoVagaInput } from './validators.js';
 import { orchestrateAnalysis } from './analysisOrchestrator.js';
-
-function sendJson(res, statusCode, payload) {
-  res.statusCode = statusCode;
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.end(JSON.stringify(payload));
-}
+import { sendJson } from './shared/http.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -19,12 +14,12 @@ export default async function handler(req, res) {
     const validation = validateCurriculoVagaInput(body);
 
     if (!validation.valid) {
-      sendJson(res, 400, { error: validation.error });
+      sendJson(res, validation.statusCode || 400, { error: validation.error });
       return;
     }
 
-    const { curriculo, vaga } = validation.data;
-    const analysis = await orchestrateAnalysis(curriculo, vaga);
+    const { curriculo, vaga, empresaManual, usarContextoPublico } = validation.data;
+    const analysis = await orchestrateAnalysis(curriculo, vaga, empresaManual, { usarContextoPublico });
 
     sendJson(res, 200, analysis);
   } catch (error) {

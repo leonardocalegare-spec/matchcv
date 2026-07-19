@@ -1,8 +1,8 @@
 {
-  "name": "matchcv",
+  "name": "vagaclara",
   "private": true,
   "version": "0.0.0",
-  "description": "Analise local de aderencia entre curriculo e vaga, com score, melhorias de curriculo e dicas para entrevista.",
+  "description": "Vaga Clara: análise local de aderência entre currículo e vaga, com score ATS e dicas para entrevista.",
   "type": "module",
   "keywords": [
     "curriculo",
@@ -20,9 +20,12 @@
     "dev:api": "node api/dev-server.js",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node api/server.js",
+    "test": "node --test"
   },
   "dependencies": {
+    "@huggingface/transformers": "3.8.1",
     "lucide-react": "^1.24.0",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",

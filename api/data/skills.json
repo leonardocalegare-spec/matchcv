@@ -1,0 +1,86 @@
+{
+  "frontend": [
+    { "id": "javascript", "label": "JavaScript", "synonyms": ["javascript", "js", "ecmascript"] },
+    { "id": "typescript", "label": "TypeScript", "synonyms": ["typescript", "ts"] },
+    { "id": "react", "label": "React", "synonyms": ["react", "react.js", "reactjs", "react js"] },
+    { "id": "html", "label": "HTML", "synonyms": ["html", "html5"] },
+    { "id": "css", "label": "CSS", "synonyms": ["css", "css3"] },
+    { "id": "figma", "label": "Figma", "synonyms": ["figma"] }
+  ],
+  "backend": [
+    { "id": "node", "label": "Node.js", "synonyms": ["node", "node.js", "nodejs", "node js"] },
+    { "id": "python", "label": "Python", "synonyms": ["python", "py"] },
+    { "id": "java", "label": "Java", "synonyms": ["java"] },
+    { "id": "api", "label": "APIs", "synonyms": ["api", "apis"] },
+    { "id": "rest", "label": "REST", "synonyms": ["rest", "restful"] }
+  ],
+  "dados": [
+    { "id": "sql", "label": "SQL", "synonyms": ["sql"] },
+    { "id": "postgresql", "label": "PostgreSQL", "synonyms": ["postgresql", "postgres"] },
+    { "id": "mysql", "label": "MySQL", "synonyms": ["mysql"] },
+    { "id": "excel", "label": "Excel", "synonyms": ["excel", "ms excel"] },
+    { "id": "power_bi", "label": "Power BI", "synonyms": ["power bi", "powerbi"] }
+  ],
+  "devops": [
+    { "id": "git", "label": "Git", "synonyms": ["git"] },
+    { "id": "github", "label": "GitHub", "synonyms": ["github"] },
+    { "id": "docker", "label": "Docker", "synonyms": ["docker", "containers"] },
+    { "id": "aws", "label": "AWS", "synonyms": ["aws", "amazon web services"] },
+    { "id": "azure", "label": "Azure", "synonyms": ["azure", "microsoft azure"] }
+  ],
+  "soft": [
+    { "id": "comunicacao", "label": "Comunicação", "synonyms": ["comunicacao", "comunicação", "boa comunicacao"] },
+    { "id": "trabalho_equipe", "label": "Trabalho em Equipe", "synonyms": ["trabalho em equipe", "trabalho de equipe"] },
+    { "id": "colaboracao", "label": "Colaboração", "synonyms": ["colaboracao", "colaboração"] },
+    { "id": "organizacao", "label": "Organização", "synonyms": ["organizacao", "organização"] },
+    { "id": "proatividade", "label": "Proatividade", "synonyms": ["proatividade", "proativo", "proativa"] },
+    { "id": "aprendizado", "label": "Aprendizado", "synonyms": ["aprendizado", "capacidade de aprendizado", "facilidade de aprendizado"] },
+    { "id": "resolucao_problemas", "label": "Resolução de Problemas", "synonyms": ["resolucao de problemas", "resolução de problemas", "problem solving"] },
+    { "id": "analitico", "label": "Analítico", "synonyms": ["analitico", "analítico", "perfil analitico"] },
+    { "id": "scrum", "label": "Scrum", "synonyms": ["scrum"] },
+    { "id": "kanban", "label": "Kanban", "synonyms": ["kanban"] }
+  ],
+  "fundamentos": [
+    { "id": "automacao", "label": "Automação", "synonyms": ["automacao", "automação"] },
+    { "id": "logica", "label": "Lógica de programação", "synonyms": ["logica", "lógica", "logica de programacao"] },
+    { "id": "programacao", "label": "Programação", "synonyms": ["programacao", "programação"] },
+    { "id": "ia", "label": "Inteligência Artificial", "synonyms": ["inteligencia artificial", "inteligência artificial", "ia", "ai", "artificial intelligence"] }
+  ],
+  "idiomas": [
+    { "id": "ingles", "label": "Inglês", "synonyms": ["ingles", "inglês", "english"] },
+    { "id": "espanhol", "label": "Espanhol", "synonyms": ["espanhol", "spanish"] },
+    { "id": "portugues", "label": "Português", "synonyms": ["portugues", "português", "portuguese"] }
+  ],
+  "produto_design": [
+    { "id": "discovery", "label": "Product Discovery", "synonyms": ["product discovery", "discovery", "descoberta de produto"] },
+    { "id": "roadmap", "label": "Roadmap", "synonyms": ["roadmap", "roadmap de produto"] },
+    { "id": "pesquisa_usuario", "label": "Pesquisa com Usuários", "synonyms": ["pesquisa com usuarios", "pesquisa com usuários", "user research", "ux research"] },
+    { "id": "prototipacao", "label": "Prototipação", "synonyms": ["prototipacao", "prototipação", "prototipo", "protótipo", "wireframe"] },
+    { "id": "design_system", "label": "Design System", "synonyms": ["design system", "sistema de design"] },
+    { "id": "acessibilidade", "label": "Acessibilidade", "synonyms": ["acessibilidade", "wcag", "a11y"] }
+  ],
+  "marketing_vendas": [
+    { "id": "seo", "label": "SEO", "synonyms": ["seo", "otimizacao para buscadores", "otimização para buscadores"] },
+    { "id": "midia_paga", "label": "Mídia Paga", "synonyms": ["midia paga", "mídia paga", "google ads", "meta ads", "trafego pago", "tráfego pago"] },
+    { "id": "crm", "label": "CRM", "synonyms": ["crm", "salesforce", "hubspot", "pipedrive"] },
+    { "id": "prospeccao", "label": "Prospecção", "synonyms": ["prospeccao", "prospecção", "outbound", "inbound sales"] },
+    { "id": "negociacao", "label": "Negociação", "synonyms": ["negociacao", "negociação", "fechamento de vendas"] },
+    { "id": "analytics_marketing", "label": "Analytics de Marketing", "synonyms": ["google analytics", "ga4", "analytics de marketing"] }
+  ],
+  "negocios_operacoes": [
+    { "id": "gestao_projetos", "label": "Gestão de Projetos", "synonyms": ["gestao de projetos", "gestão de projetos", "project management"] },
+    { "id": "melhoria_processos", "label": "Melhoria de Processos", "synonyms": ["melhoria de processos", "melhoria continua", "melhoria contínua", "lean"] },
+    { "id": "erp", "label": "ERP", "synonyms": ["erp", "sap", "totvs"] },
+    { "id": "logistica", "label": "Logística", "synonyms": ["logistica", "logística", "supply chain"] },
+    { "id": "compras", "label": "Compras", "synonyms": ["compras", "procurement", "suprimentos"] },
+    { "id": "indicadores", "label": "Indicadores e KPIs", "synonyms": ["kpi", "kpis", "indicadores", "metas"] }
+  ],
+  "pessoas_cliente_financas": [
+    { "id": "recrutamento", "label": "Recrutamento e Seleção", "synonyms": ["recrutamento e selecao", "recrutamento e seleção", "talent acquisition"] },
+    { "id": "departamento_pessoal", "label": "Departamento Pessoal", "synonyms": ["departamento pessoal", "folha de pagamento", "admissao", "admissão"] },
+    { "id": "customer_success", "label": "Customer Success", "synonyms": ["customer success", "sucesso do cliente", "cs"] },
+    { "id": "atendimento_cliente", "label": "Atendimento ao Cliente", "synonyms": ["atendimento ao cliente", "suporte ao cliente", "sac"] },
+    { "id": "contabilidade", "label": "Contabilidade", "synonyms": ["contabilidade", "contabil", "contábil"] },
+    { "id": "fluxo_caixa", "label": "Fluxo de Caixa", "synonyms": ["fluxo de caixa", "tesouraria", "contas a pagar", "contas a receber"] }
+  ]
+}
