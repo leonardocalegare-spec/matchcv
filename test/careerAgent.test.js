@@ -2,6 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { analisarCurriculoComAgente } from '../api/careerAgent.js';
 
+test('reconhece aplicação real mesmo quando o currículo não traz números', () => {
+  const result = analisarCurriculoComAgente(
+    'Desenvolvi interfaces em React para o portal interno da equipe.',
+    'Vaga de Desenvolvedor. Requisito obrigatório: experiência com React.',
+  );
+  const requirement = result.analise_aderencia.requisitos.find((item) => item.skill === 'React');
+  assert.equal(requirement.status, 'comprovado');
+  assert.equal(requirement.evidence_level, 'aplicação');
+});
+
+test('não trata palavras genéricas como projeto ou cliente como resultado mensurável', () => {
+  const result = analisarCurriculoComAgente(
+    'Conhecimento em React adquirido em projetos pessoais.',
+    'Vaga de Desenvolvedor. Requisito obrigatório: experiência com React.',
+  );
+  const requirement = result.analise_aderencia.requisitos.find((item) => item.skill === 'React');
+  assert.equal(requirement.status, 'parcial');
+  assert.equal(requirement.evidence_level, 'menção');
+});
+
 test('compara senioridade do currículo com a vaga sem penalizar vagas seniores por padrão', () => {
   const result = analisarCurriculoComAgente(
     'Desenvolvedor Senior com 6 anos de experiência. Desenvolvi aplicações React para clientes.',

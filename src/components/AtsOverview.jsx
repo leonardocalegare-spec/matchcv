@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, BrainCircuit, CheckCircle2, FileSearch, Gauge, ShieldCheck } from 'lucide-react';
 
 const confidenceLabel = { alta: 'Alta', 'média': 'Média', baixa: 'Baixa' };
+const requirementStatusLabel = { comprovado: 'Há evidência', parcial: 'Precisa ficar mais claro', ausente: 'Não aparece no currículo' };
 
 function ScoreCard({ icon: Icon, label, value, detail }) {
   return (
@@ -18,6 +19,7 @@ export default function AtsOverview({ resultado }) {
   const document = ats.document_readability || {};
   const semanticAvailable = resultado.semantic_analysis?.status === 'completed';
   const priorities = resultado.curriculo_otimizado?.acoes_prioritarias?.slice(0, 3) || [];
+  const requirements = resultado.analise_aderencia?.requisitos?.slice(0, 6) || [];
 
   return (
     <div className="ats-overview">
@@ -28,7 +30,7 @@ export default function AtsOverview({ resultado }) {
           <p>{ats.disclaimer}</p>
           <div className="ats-trust-row">
             <span><ShieldCheck size={15} /> Confiança {confidenceLabel[ats.confidence] || 'Baixa'}</span>
-            <span><BrainCircuit size={15} /> {semanticAvailable ? 'IA semântica local ativa' : 'Fallback determinístico ativo'}</span>
+            <span><BrainCircuit size={15} /> {semanticAvailable ? 'Leitura por contexto disponível' : 'Comparação direta disponível'}</span>
           </div>
         </div>
         <div className="ats-main-score" aria-label={`${ats.overall_score}% de compatibilidade ATS estimada`}>
@@ -53,6 +55,31 @@ export default function AtsOverview({ resultado }) {
           ))}
         </div>
       </section>
+
+      {requirements.length > 0 && (
+        <section className="glass-panel evidence-review" aria-labelledby="evidence-review-title">
+          <div className="section-heading compact-heading">
+            <div>
+              <p className="eyebrow">O que encontramos</p>
+              <h3 id="evidence-review-title">Requisitos e sinais no seu currículo</h3>
+              <p className="section-intro">Cada item mostra o que a vaga pede, o trecho encontrado e o que vale ajustar. Uma sugestão por contexto nunca é tratada como experiência comprovada.</p>
+            </div>
+          </div>
+          <div className="evidence-review-list">
+            {requirements.map((requirement) => (
+              <article className={`evidence-review-item is-${requirement.status}`} key={requirement.id || `${requirement.category}-${requirement.skill}`}>
+                <div className="evidence-review-heading">
+                  <strong>{requirement.skill}</strong>
+                  <span>{requirementStatusLabel[requirement.status] || 'Revisar'}</span>
+                </div>
+                {requirement.evidence && <p><b>No currículo:</b> “{requirement.evidence}”</p>}
+                {!requirement.evidence && requirement.semantic_evidence && <p><b>Trecho parecido para você conferir:</b> “{requirement.semantic_evidence}”</p>}
+                <p className="evidence-review-action">{requirement.recommendation}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="ats-summary-grid">
         <section className="glass-panel">

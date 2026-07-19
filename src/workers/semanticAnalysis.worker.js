@@ -31,16 +31,21 @@ self.onmessage = async (event) => {
     const matches = requirements.map((requirement, requirementIndex) => {
       let bestIndex = -1;
       let similarity = -1;
+      let secondBestSimilarity = -1;
       for (let segmentIndex = 0; segmentIndex < segmentVectors.length; segmentIndex += 1) {
         const current = dot(requirementVectors[requirementIndex], segmentVectors[segmentIndex]);
         if (current > similarity) {
+          secondBestSimilarity = similarity;
           similarity = current;
           bestIndex = segmentIndex;
+        } else if (current > secondBestSimilarity) {
+          secondBestSimilarity = current;
         }
       }
       return {
         key: requirement.key,
         similarity: Number(Math.max(0, similarity).toFixed(4)),
+        margin: Number(Math.max(0, similarity - secondBestSimilarity).toFixed(4)),
         evidence: bestIndex >= 0 ? segments[bestIndex] : null,
       };
     });

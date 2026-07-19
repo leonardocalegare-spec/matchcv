@@ -181,12 +181,21 @@ function findEvidence(curriculo, skills) {
 }
 
 function hasMetric(sentence) {
-  return /\d+|%|por cento|usuarios|usuários|clientes|projetos|horas|dias|semanas|meses/i.test(sentence);
+  return /(?:\b\d+(?:[.,]\d+)?\s*(?:%|por cento|mil|milhão|milhões|hora|horas|dia|dias|semana|semanas|mês|meses|ano|anos|usuário|usuários|cliente|clientes|projeto|projetos)?\b)|(?:R\$\s*\d+)/i.test(sentence);
 }
 
 function hasActionVerb(sentence) {
   const normalized = normalize(sentence);
   return ACTION_VERBS.some((verb) => normalized.includes(verb));
+}
+
+function evidenceLevel(evidence) {
+  if (!evidence) return 'ausente';
+  const action = hasActionVerb(evidence);
+  const measurable = hasMetric(evidence);
+  if (action && measurable) return 'mensurável';
+  if (action) return 'aplicação';
+  return 'menção';
 }
 
 function isCriticalRequirement(skill, vaga) {
@@ -217,23 +226,36 @@ function isCriticalRequirement(skill, vaga) {
 function buildRequirementMatrix(vagaSkills, matchedEvidence, desirableSentences, vaga) {
   const desirableText = desirableSentences.join(' ');
 
-  return vagaSkills.map((skill) => {
+  return vagaSkills.map((skill, index) => {
     const evidenceObj = matchedEvidence.find((item) => item.skill === skill);
     const evidence = evidenceObj?.evidence || null;
     const category = includesTerm(desirableText, skill) ? 'desejável' : 'obrigatório';
     const isCritical = category === 'obrigatório' && isCriticalRequirement(skill, vaga);
 
-    const hasStrongEvidence = evidence && hasActionVerb(evidence) && hasMetric(evidence);
-    const status = !evidence ? 'ausente' : hasStrongEvidence ? 'comprovado' : 'parcial';
+    const level = evidenceLevel(evidence);
+    const status = level === 'aplicação' || level === 'mensurável' ? 'comprovado' : level === 'menção' ? 'parcial' : 'ausente';
     const score = evidenceObj?.score || 0;
 
     const recommendation = status === 'ausente'
       ? `Se houver experiência real, inclua um projeto, curso ou entrega que comprove ${skill}.`
       : status === 'parcial'
-        ? `Reescreva a evidência de ${skill} com ação, contexto e impacto mensurável.`
-        : `Destaque ${skill} no resumo e em um dos primeiros bullets do currículo.`;
+        ? `Explique onde você usou ${skill}, o que fez e qual mudança isso gerou. Inclua números somente se puder confirmá-los.`
+        : level === 'mensurável'
+          ? `Mantenha esta evidência em destaque: ela mostra ação e resultado de forma clara.`
+          : `Mantenha esta experiência visível e, se houver um resultado concreto, acrescente-o sem exagerar.`;
 
-    return { skill, category, status, evidence, recommendation, isCritical, score };
+    return {
+      id: `skill-${index + 1}`,
+      skill,
+      source_text: skill,
+      category,
+      status,
+      evidence,
+      evidence_level: level,
+      recommendation,
+      isCritical,
+      score,
+    };
   });
 }
 
@@ -249,7 +271,7 @@ function buildTextRequirementMatrix(requiredSentences, desirableSentences, curri
     ...desirableSentences.map((text) => ({ text, category: 'desejável' }))]
     .filter(({ text }) => !vagaSkills.some((skill) => includesTerm(text, skill)))
     .slice(0, 6)
-    .map(({ text, category }) => {
+    .map(({ text, category }, index) => {
       const keywords = unique(normalize(text).match(/[a-z0-9+#.]{3,}/g) || [])
         .filter((word) => !stopwords.has(word))
         .slice(0, 8);
@@ -266,10 +288,13 @@ function buildTextRequirementMatrix(requiredSentences, desirableSentences, curri
           : 'Mantenha esta evidência em posição visível no currículo.';
 
       return {
+        id: `text-${index + 1}`,
         skill: text.length > 110 ? `${text.slice(0, 107)}...` : text,
+        source_text: text,
         category,
         status,
         evidence,
+        evidence_level: evidence ? (hasActionVerb(evidence) ? 'aplicação' : 'menção') : 'ausente',
         recommendation,
         isCritical: category === 'obrigatório',
         score: Math.round(coverage * 100),
@@ -329,10 +354,10 @@ function buildConfidence(vagaSkills, requiredSentences) {
 
 function buildScoreNarrative(score) {
   if (score < 50) {
-    return 'Isso mostra que seu currículo ainda não comprova boa parte do que a vaga pede – não é uma nota final, é um ponto de partida. Veja abaixo exatamente o que fortalecer.';
+    return 'Seu currículo ainda deixa vários pontos importantes da vaga sem resposta. Isso não encerra suas chances: use a análise para decidir o que pode ser explicado melhor e o que ainda precisa ser desenvolvido.';
   }
   if (score < 80) {
-    return 'Seu currículo já comprova boa parte do que a vaga pede. Os ajustes abaixo podem aumentar essa aderência antes de você se candidatar.';
+    return 'Seu currículo já conversa com uma boa parte da vaga. Antes de se candidatar, vale deixar mais visíveis as experiências que comprovam os requisitos principais.';
   }
   return 'Seu currículo já comprova a maior parte dos requisitos desta vaga. Reforce os pontos abaixo para deixar isso ainda mais evidente no processo seletivo.';
 }
@@ -367,12 +392,12 @@ function buildRelevantExperiences(curriculo, matchedEvidence, missingSkills, rol
   }
 
   const genericBullets = [
-    `Adicionar bullets com contexto, ação, método e resultado relevante para ${roleProfile.label}.`,
-    'Priorizar experiências que comprovem aderência direta às responsabilidades da vaga.',
+    `Conte primeiro as experiências que mais se aproximam do trabalho em ${roleProfile.label}. Em cada uma, explique a situação, o que você fez e o resultado.`,
+    'Coloque no início do currículo as experiências que respondem diretamente ao que a vaga pede.',
   ];
 
   if (missingSkills.length > 0) {
-    genericBullets.push(`Criar ou destacar evidência real relacionada a ${missingSkills.slice(0, 3).join(', ')}.`);
+    genericBullets.push(`Se você já teve contato real com ${missingSkills.slice(0, 3).join(', ')}, mostre onde isso aconteceu. Caso contrário, não inclua apenas para combinar com a vaga.`);
   }
 
   return unique([...evidenceBullets, ...genericBullets]).slice(0, 5);
@@ -390,16 +415,16 @@ function buildSuggestedBullets(matchedEvidence, missingSkills, level) {
         ? 'preservando o verbo de ação'
         : 'começando com um verbo de ação forte';
 
-      return `${actionHint}, reescreva este ponto para destacar ${item.skill}, contexto, método utilizado e resultado, ${metricHint}: "${item.evidence}"`;
+      return `${actionHint}, deixe mais claro como você usou ${item.skill}, em qual situação e o que mudou depois, ${metricHint}. Trecho de partida: "${item.evidence}"`;
     });
 
   const gapBullet = missingSkills.length > 0
-    ? [`Se houver experiência real, adicione um bullet específico conectando ${missingSkills.slice(0, 2).join(' e ')} a projeto, curso ou entrega prática.`]
+    ? [`Se for verdade na sua trajetória, mostre onde você aplicou ${missingSkills.slice(0, 2).join(' e ')} — em trabalho, projeto ou curso. Se ainda não aplicou, trate como ponto de desenvolvimento.`]
     : [];
 
   const seniorityBullet = level === 'estágio' || level === 'junior'
-    ? ['Inclua um bullet de aprendizado aplicado: tecnologia estudada, projeto construído e problema resolvido.']
-    : ['Inclua um bullet de autonomia: problema complexo, decisão tomada, tradeoff e resultado obtido.'];
+    ? ['Mostre um aprendizado colocado em prática: o que você estudou, o que construiu e qual problema conseguiu resolver.']
+    : ['Escolha um exemplo em que você tomou uma decisão importante, explique as alternativas consideradas e o resultado alcançado.'];
 
   return unique([...bulletsFromEvidence, ...gapBullet, ...seniorityBullet]).slice(0, 5);
 }
@@ -441,7 +466,7 @@ function buildHonestyAlerts(missingSkills, matchedEvidence) {
 
   const weakEvidence = matchedEvidence
     .filter((item) => !item.evidence)
-    .map((item) => `A skill ${item.skill} foi detectada, mas sem frase forte de evidência. Reforce com contexto real.`);
+    .map((item) => `${item.skill} aparece como relevante, mas ainda falta um exemplo claro no currículo. Só acrescente essa informação se puder ligá-la a uma experiência real.`);
 
   return unique([...alerts, ...weakEvidence]).slice(0, 5);
 }
@@ -494,7 +519,7 @@ function buildJustification(score, matchedSkills, missingSkills, level) {
   const matched = matchedSkills.length > 0 ? matchedSkills.join(', ') : 'nenhuma competência explícita detectada em comum';
   const missing = missingSkills.length > 0 ? missingSkills.join(', ') : 'sem lacunas explícitas detectadas';
 
-  return `${recommendation}: score baseado em cobertura de competências, evidências textuais e senioridade (${level}). Pontos fortes: ${matched}. Pontos a reforçar: ${missing}.`;
+  return `${recommendation}: esta estimativa considera o que a vaga pede, o que seu currículo consegue comprovar e a senioridade identificada (${level}). Hoje, os pontos mais claros são ${matched}. Vale revisar ${missing}.`;
 }
 
 export function analisarCurriculoComAgente(curriculo, vaga, empresaManual = null) {

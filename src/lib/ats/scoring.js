@@ -20,27 +20,25 @@ function mergeSemanticEvidence(requirements, matches) {
     const key = `${requirement.category || 'geral'}:${requirement.skill || index}`;
     const semantic = matchesByKey.get(key);
     if (!semantic) return { ...requirement, semantic_similarity: null, semantic_evidence: null };
-    const strongSemanticMatch = semantic.similarity >= 0.72;
-    const canAddPartialEvidence = requirement.status === 'ausente' && strongSemanticMatch;
+    const reviewableSemanticMatch = semantic.similarity >= 0.72 && semantic.margin >= 0.08;
     return {
       ...requirement,
-      status_original: requirement.status,
-      status: canAddPartialEvidence ? 'parcial' : requirement.status,
-      evidence: canAddPartialEvidence ? semantic.evidence : requirement.evidence,
       semantic_similarity: Math.round(semantic.similarity * 100),
-      semantic_evidence: semantic.evidence,
-      semantic_contribution: canAddPartialEvidence,
-      recommendation: canAddPartialEvidence
-        ? 'A IA encontrou uma evidência semanticamente relacionada. Revise o trecho e torne a relação explícita sem adicionar fatos novos.'
-        : requirement.recommendation,
+      semantic_margin: Math.round((semantic.margin || 0) * 100),
+      semantic_evidence: reviewableSemanticMatch ? semantic.evidence : null,
+      semantic_contribution: false,
+      semantic_review_suggested: reviewableSemanticMatch && requirement.status !== 'comprovado',
     };
   });
 }
 
-function confidenceFor({ deterministicConfidence, semanticStatus, documentDiagnostics }) {
+function confidenceFor({ deterministicConfidence, documentDiagnostics, requirements }) {
   let points = deterministicConfidence === 'alta' ? 2 : deterministicConfidence === 'média' ? 1 : 0;
-  if (semanticStatus === 'completed') points += 1;
   if ((documentDiagnostics?.extraction_confidence ?? 0) >= 75) points += 1;
+  const supported = requirements.filter((item) => item.status === 'comprovado').length;
+  const ambiguous = requirements.filter((item) => item.semantic_review_suggested).length;
+  if (requirements.length >= 3 && supported / requirements.length >= 0.5) points += 1;
+  if (ambiguous > Math.max(2, requirements.length * 0.4)) points -= 1;
   if (points >= 4) return 'alta';
   if (points >= 2) return 'média';
   return 'baixa';
@@ -58,7 +56,7 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
   const requirementsScore = Math.round((mandatoryScore * 0.85) + (desirableScore * 0.15));
   const evidenceScore = Math.round(average(requirements, (item) => {
     if (item.status === 'comprovado') return Math.max(80, item.score || 0);
-    if (item.status === 'parcial') return item.semantic_contribution ? 55 : Math.max(45, item.score || 0);
+    if (item.status === 'parcial') return Math.max(45, item.score || 0);
     return 0;
   }) ?? 0);
   const seniorityRaw = analysis.match_score?.detalhamento?.adequacao_senioridade;
@@ -70,10 +68,9 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
 
   const factors = [
     { key: 'document_readability', label: 'Leitura técnica do documento', score: readabilityScore, weight: 20 },
-    { key: 'requirements', label: 'Requisitos obrigatórios e desejáveis', score: requirementsScore, weight: 35 },
-    { key: 'semantic_match', label: 'Correspondência semântica', score: semanticResult?.status === 'completed' ? Math.round(average(semanticResult.matches, (item) => item.similarity * 100) ?? 0) : mandatoryScore, weight: 20 },
-    { key: 'evidence_quality', label: 'Qualidade das evidências', score: evidenceScore, weight: 15 },
-    { key: 'seniority', label: 'Adequação de senioridade', score: seniorityScore, weight: 5 },
+    { key: 'requirements', label: 'Requisitos obrigatórios e desejáveis', score: requirementsScore, weight: 45 },
+    { key: 'evidence_quality', label: 'Qualidade das evidências', score: evidenceScore, weight: 20 },
+    { key: 'seniority', label: 'Adequação de senioridade', score: seniorityScore, weight: 10 },
     { key: 'keyword_findability', label: 'Palavras-chave encontráveis', score: keywordScore, weight: 5 },
   ];
   const overallScore = clamp(Math.round(factors.reduce((total, factor) => total + (factor.score * factor.weight / 100), 0)));
@@ -90,7 +87,7 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
 
   return {
     ...analysis,
-    analysis_version: '2.0',
+    analysis_version: '2.1',
     analise_aderencia: { ...analysis.analise_aderencia, requisitos: finalRequirements, resumo: summary },
     ats_analysis: {
       label: 'Compatibilidade ATS estimada',
@@ -100,8 +97,8 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
       factors,
       confidence: confidenceFor({
         deterministicConfidence: analysis.meta?.confianca_analise,
-        semanticStatus: semanticResult?.status,
         documentDiagnostics,
+        requirements: finalRequirements,
       }),
       disclaimer: 'Esta é uma estimativa explicada. Sistemas ATS usam regras diferentes e não existe uma pontuação universal.',
     },
@@ -111,8 +108,8 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
       processed_locally: true,
       matches: semanticResult?.matches || [],
       notice: semanticResult?.status === 'completed'
-        ? 'A correspondência semântica foi executada localmente no navegador.'
-        : 'A camada semântica não ficou disponível; o resultado determinístico foi preservado.',
+        ? 'A leitura por contexto foi feita no seu navegador e usada apenas para sugerir trechos que merecem revisão.'
+        : 'A leitura por contexto não ficou disponível. A comparação principal continuou funcionando normalmente.',
     },
   };
 }

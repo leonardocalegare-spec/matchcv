@@ -1,8 +1,8 @@
 /**
- * @typedef {{ companyName: string | null, stackKeywords: string[], seniority: string, requirements: string[] }} JobInfo
+ * @typedef {{ companyName: string | null, stackKeywords: string[], seniority: string, requirements: Array<{id: string, text: string}> }} JobInfo
  * @typedef {{ available: boolean, summary: string, size: string, recentSignals: Array<{texto: string, url: string | null}>, source?: string }} CompanyContext
  * @typedef {{ available: boolean, insights: string[] }} MarketContext
- * @typedef {{ empresa_contexto: { resumo: string, porte: string, sinais_relevantes: string[] }, match_score: number, gaps_identificados: string[], dicas: Array<{ dica: string, motivo: string, fonte: 'mercado' | 'vaga' | 'empresa' }>, reformulacao_sugerida: string, faltando_no_curriculo: string[] }} LlmAnalysis
+ * @typedef {{ empresa_contexto: { resumo: string, porte: string, sinais_relevantes: string[] }, gaps_identificados: string[], dicas: Array<{ requirement_id: string | null, dica: string, motivo: string, fonte: 'mercado' | 'vaga' | 'empresa' }>, reformulacao_sugerida: string, faltando_no_curriculo: string[] }} LlmAnalysis
  */
 
 import { detectCompany } from './shared/companyDetection.js';
@@ -52,7 +52,7 @@ export function extractJobInfo(jobText, userCompanyName = null) {
     companyName,
     stackKeywords: KNOWN_SKILLS.filter((skill) => includesTerm(jobText, skill)),
     seniority: detectSeniority(jobText),
-    requirements,
+    requirements: requirements.map((text, index) => ({ id: `job-${index + 1}`, text })),
     roleFamily: roleProfile.id,
     roleFamilyLabel: roleProfile.label,
     roleFocus: roleProfile.focus,
@@ -193,13 +193,15 @@ export function buildFinalPrompt(resume, jobInfo, companyContext, marketContext)
     'Não invente números, empresas, habilidades, experiências ou resultados fora do currículo original.',
     'Quando o currículo não comprovar uma informação, inclua-a em faltando_no_curriculo ou gaps_identificados.',
     'Cada dica deve ter motivo específico para esta vaga e fonte mercado, vaga ou empresa.',
+    'Quando a dica estiver ligada a um requisito, informe requirement_id usando o identificador recebido; caso contrário, use null.',
+    'Não gere pontuação de compatibilidade. A nota é calculada apenas pelo mecanismo determinístico da aplicação.',
     'Toda dica deve ser refletida em reformulacao_sugerida, e toda mudança na reformulacao_sugerida deve corresponder a uma dica.',
     'A reformulacao_sugerida deve usar somente fatos do currículo; use [preencher com fato real] quando faltar dado.',
   ].join(' ');
   const companyPrompt = companyContext.available ? JSON.stringify(companyContext) : 'contexto de empresa indisponível, não especule.';
   const marketPrompt = marketContext.available ? JSON.stringify(marketContext) : 'contexto de mercado indisponível, não especule.';
 
-  return `${instructions}\n\nSCHEMA:\n{"empresa_contexto":{"resumo":"","porte":"","sinais_relevantes":[]},"match_score":0,"gaps_identificados":[],"dicas":[{"dica":"","motivo":"","fonte":"mercado|vaga|empresa"}],"reformulacao_sugerida":"","faltando_no_curriculo":[]}\n\n<curriculo_original>\n${resume}\n</curriculo_original>\n\n<dados_vaga>\n${JSON.stringify(jobInfo)}\n</dados_vaga>\n\n<contexto_empresa>\n${companyPrompt}\n</contexto_empresa>\n\n<contexto_mercado>\n${marketPrompt}\n</contexto_mercado>`;
+  return `${instructions}\n\nSCHEMA:\n{"empresa_contexto":{"resumo":"","porte":"","sinais_relevantes":[]},"gaps_identificados":[],"dicas":[{"requirement_id":null,"dica":"","motivo":"","fonte":"mercado|vaga|empresa"}],"reformulacao_sugerida":"","faltando_no_curriculo":[]}\n\n<curriculo_original>\n${resume}\n</curriculo_original>\n\n<dados_vaga>\n${JSON.stringify(jobInfo)}\n</dados_vaga>\n\n<contexto_empresa>\n${companyPrompt}\n</contexto_empresa>\n\n<contexto_mercado>\n${marketPrompt}\n</contexto_mercado>`;
 }
 
 function assertLlmSchema(value) {
@@ -207,10 +209,10 @@ function assertLlmSchema(value) {
   const company = value.empresa_contexto;
   const validCompany = company && typeof company === 'object' && typeof company.resumo === 'string' && typeof company.porte === 'string' && Array.isArray(company.sinais_relevantes);
   const validTips = Array.isArray(value.dicas) && value.dicas.every((tip) => (
-    tip && typeof tip.dica === 'string' && typeof tip.motivo === 'string' && ['mercado', 'vaga', 'empresa'].includes(tip.fonte)
+    tip && (tip.requirement_id === null || typeof tip.requirement_id === 'string') && typeof tip.dica === 'string' && typeof tip.motivo === 'string' && ['mercado', 'vaga', 'empresa'].includes(tip.fonte)
   ));
 
-  if (!validCompany || !Number.isFinite(value.match_score) || value.match_score < 0 || value.match_score > 100 || !Array.isArray(value.gaps_identificados) || !validTips || typeof value.reformulacao_sugerida !== 'string' || !Array.isArray(value.faltando_no_curriculo)) {
+  if (!validCompany || !Array.isArray(value.gaps_identificados) || !validTips || typeof value.reformulacao_sugerida !== 'string' || !Array.isArray(value.faltando_no_curriculo)) {
     throw new Error('O LLM retornou um schema incompleto.');
   }
   return value;

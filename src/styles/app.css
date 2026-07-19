@@ -817,6 +817,20 @@ details.requirement-row { display: block; padding: 0; }
 .semantic-notice { margin: 0 0 1rem; border-radius: 10px; }
 .semantic-score { color: #c4b5fd; font-size: 0.72rem; font-weight: 750; }
 
+.evidence-review { display: grid; gap: 1rem; }
+.evidence-review .section-intro { margin: 0.45rem 0 0; }
+.evidence-review-list { display: grid; gap: 0.75rem; }
+.evidence-review-item { display: grid; gap: 0.55rem; padding: 1rem; border: 1px solid #dbe5ef; border-left-width: 4px; border-radius: 12px; background: #fff; }
+.evidence-review-item.is-comprovado { border-left-color: #0f766e; }
+.evidence-review-item.is-parcial { border-left-color: #1769aa; }
+.evidence-review-item.is-ausente { border-left-color: #d97706; }
+.evidence-review-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.evidence-review-heading strong { color: #17324d; line-height: 1.45; }
+.evidence-review-heading span { flex: 0 0 auto; padding: 0.28rem 0.5rem; border-radius: 999px; color: #526579; background: #eef3f7; font-size: 0.72rem; font-weight: 750; }
+.evidence-review-item p { margin: 0; color: #526579; font-size: 0.86rem; line-height: 1.6; }
+.evidence-review-item b { color: #294861; }
+.evidence-review-item .evidence-review-action { color: #294861; }
+
 @media (max-width: 480px) {
   .ats-score-grid,
   .ats-summary-grid {
@@ -829,6 +843,8 @@ details.requirement-row { display: block; padding: 0; }
   .section-heading {
     flex-direction: column;
   }
+
+  .evidence-review-heading { flex-direction: column; gap: 0.5rem; }
 
   .signature {
     flex-direction: column;
