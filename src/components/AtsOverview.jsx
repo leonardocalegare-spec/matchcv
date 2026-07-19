@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, BrainCircuit, CheckCircle2, FileSearch, Gauge, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileSearch, Gauge, ShieldCheck } from 'lucide-react';
 
 const confidenceLabel = { alta: 'Alta', 'média': 'Média', baixa: 'Baixa' };
 const requirementStatusLabel = { comprovado: 'Há evidência', parcial: 'Precisa ficar mais claro', ausente: 'Não aparece no currículo' };
@@ -17,7 +17,6 @@ export default function AtsOverview({ resultado }) {
   const ats = resultado?.ats_analysis;
   if (!ats) return null;
   const document = ats.document_readability || {};
-  const semanticAvailable = resultado.semantic_analysis?.status === 'completed';
   const priorities = resultado.curriculo_otimizado?.acoes_prioritarias?.slice(0, 3) || [];
   const requirements = resultado.analise_aderencia?.requisitos?.slice(0, 6) || [];
 
@@ -25,23 +24,23 @@ export default function AtsOverview({ resultado }) {
     <div className="ats-overview">
       <section className="glass-panel ats-hero" aria-labelledby="ats-title">
         <div className="ats-hero-copy">
-          <span className="eyebrow"><Gauge size={15} /> Análise ATS v{resultado.analysis_version}</span>
+          <span className="eyebrow"><Gauge size={15} /> Leitura explicada v{resultado.analysis_version}</span>
           <h3 id="ats-title">{ats.label}</h3>
           <p>{ats.disclaimer}</p>
           <div className="ats-trust-row">
             <span><ShieldCheck size={15} /> Confiança {confidenceLabel[ats.confidence] || 'Baixa'}</span>
-            <span><BrainCircuit size={15} /> {semanticAvailable ? 'Leitura por contexto disponível' : 'Comparação direta disponível'}</span>
+            <span><CheckCircle2 size={15} /> Baseada no texto enviado</span>
           </div>
         </div>
-        <div className="ats-main-score" aria-label={`${ats.overall_score}% de compatibilidade ATS estimada`}>
+        <div className="ats-main-score" aria-label={`${ats.overall_score}% de compatibilidade estimada`}>
           <strong>{ats.overall_score}%</strong>
-          <span>estimativa ATS</span>
+          <span>compatibilidade</span>
         </div>
       </section>
 
       <div className="ats-score-grid">
         <ScoreCard icon={FileSearch} label="Leitura do arquivo" value={document.score || 0} detail="estrutura e extração" />
-        <ScoreCard icon={BrainCircuit} label="Aderência à vaga" value={ats.job_match_score || 0} detail="requisitos e evidências" />
+        <ScoreCard icon={CheckCircle2} label="Aderência à vaga" value={ats.job_match_score || 0} detail="requisitos e evidências" />
       </div>
 
       <section className="glass-panel ats-breakdown">
@@ -62,7 +61,7 @@ export default function AtsOverview({ resultado }) {
             <div>
               <p className="eyebrow">O que encontramos</p>
               <h3 id="evidence-review-title">Requisitos e sinais no seu currículo</h3>
-              <p className="section-intro">Cada item mostra o que a vaga pede, o trecho encontrado e o que vale ajustar. Uma sugestão por contexto nunca é tratada como experiência comprovada.</p>
+              <p className="section-intro">Cada item mostra o que a vaga pede, o trecho encontrado e o que vale ajustar.</p>
             </div>
           </div>
           <div className="evidence-review-list">
@@ -73,7 +72,6 @@ export default function AtsOverview({ resultado }) {
                   <span>{requirementStatusLabel[requirement.status] || 'Revisar'}</span>
                 </div>
                 {requirement.evidence && <p><b>No currículo:</b> “{requirement.evidence}”</p>}
-                {!requirement.evidence && requirement.semantic_evidence && <p><b>Trecho parecido para você conferir:</b> “{requirement.semantic_evidence}”</p>}
                 <p className="evidence-review-action">{requirement.recommendation}</p>
               </article>
             ))}

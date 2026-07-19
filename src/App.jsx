@@ -18,8 +18,6 @@ export default function App() {
   const [step, setStep] = useState(1); // 1: Currículo, 2: Vaga, 3: Resultados
   const [curriculo, setCurriculo] = useState('');
   const [vaga, setVaga] = useState('');
-  const [empresaManual, setEmpresaManual] = useState('');
-  const [usarContextoPublico, setUsarContextoPublico] = useState(true);
   const [salvarCurriculo, setSalvarCurriculo] = useState(false);
   const [consentimentoAnalise, setConsentimentoAnalise] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,8 +84,6 @@ export default function App() {
       const analise = await analisarVaga(
         curriculo,
         vaga,
-        empresaManual,
-        usarContextoPublico,
         documentAnalysis,
         setAnalysisProgress,
       );
@@ -164,14 +160,7 @@ export default function App() {
       {/* Passo 2: Vaga */}
       {step >= 2 && (
         <div className={`step-container ${step === 2 ? 'step-active' : 'step-hidden'}`}>
-          <VagaInput
-            value={vaga}
-            onChange={setVaga}
-            empresaManual={empresaManual}
-            setEmpresaManual={setEmpresaManual}
-            usarContextoPublico={usarContextoPublico}
-            setUsarContextoPublico={setUsarContextoPublico}
-          />
+          <VagaInput value={vaga} onChange={setVaga} />
           {vaga.trim().length === 0 && (
             <p className="step-hint">⬆️ Cole a descrição da vaga</p>
           )}

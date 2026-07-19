@@ -10,7 +10,7 @@ export default function WelcomeScreen({ onContinue }) {
         <div className="welcome-logo"><BriefcaseBusiness size={24} /></div>
         <span className="welcome-kicker"><Sparkles size={15} /> Sua candidatura começa com clareza</span>
         <h1>Bem-vindo ao Vaga Clara.</h1>
-        <p>Compare seu currículo com a vaga, descubra como ele pode ser lido por sistemas ATS e receba um plano baseado em evidências reais.</p>
+        <p>Compare seu currículo com a vaga, entenda o que já está claro e receba um plano baseado em evidências reais.</p>
 
         <div className="welcome-steps">
           <div><FileSearch size={19} /><span><strong>Entenda</strong> o que a vaga realmente pede</span></div>

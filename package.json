@@ -2,7 +2,7 @@
   "name": "vagaclara",
   "private": true,
   "version": "0.0.0",
-  "description": "Vaga Clara: análise local de aderência entre currículo e vaga, com score ATS e dicas para entrevista.",
+  "description": "Vaga Clara: compare requisitos da vaga com evidências reais do currículo.",
   "type": "module",
   "keywords": [
     "curriculo",
@@ -25,7 +25,6 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@huggingface/transformers": "3.8.1",
     "lucide-react": "^1.24.0",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",

@@ -522,7 +522,7 @@ function buildJustification(score, matchedSkills, missingSkills, level) {
   return `${recommendation}: esta estimativa considera o que a vaga pede, o que seu currículo consegue comprovar e a senioridade identificada (${level}). Hoje, os pontos mais claros são ${matched}. Vale revisar ${missing}.`;
 }
 
-export function analisarCurriculoComAgente(curriculo, vaga, empresaManual = null) {
+export function analisarCurriculoComAgente(curriculo, vaga) {
   const level = detectLevel(vaga);
   const roleProfile = detectRoleProfile(vaga);
   const resumeLevel = detectResumeLevel(curriculo);
@@ -543,7 +543,7 @@ export function analisarCurriculoComAgente(curriculo, vaga, empresaManual = null
   return {
     vaga_analise: {
       titulo: detectTitle(vaga),
-      empresa: detectCompany(vaga, empresaManual),
+      empresa: detectCompany(vaga),
       requisitos_obrigatorios: requiredSentences.length > 0
         ? requiredSentences
         : inferRequirementsFromSkills(vagaSkills),

@@ -14,41 +14,18 @@ function scoreRequirements(items) {
   return result == null ? null : Math.round(result * 100);
 }
 
-function mergeSemanticEvidence(requirements, matches) {
-  const matchesByKey = new Map(matches.map((item) => [item.key, item]));
-  return requirements.map((requirement, index) => {
-    const key = `${requirement.category || 'geral'}:${requirement.skill || index}`;
-    const semantic = matchesByKey.get(key);
-    if (!semantic) return { ...requirement, semantic_similarity: null, semantic_evidence: null };
-    const reviewableSemanticMatch = semantic.similarity >= 0.72 && semantic.margin >= 0.08;
-    return {
-      ...requirement,
-      semantic_similarity: Math.round(semantic.similarity * 100),
-      semantic_margin: Math.round((semantic.margin || 0) * 100),
-      semantic_evidence: reviewableSemanticMatch ? semantic.evidence : null,
-      semantic_contribution: false,
-      semantic_review_suggested: reviewableSemanticMatch && requirement.status !== 'comprovado',
-    };
-  });
-}
-
 function confidenceFor({ deterministicConfidence, documentDiagnostics, requirements }) {
   let points = deterministicConfidence === 'alta' ? 2 : deterministicConfidence === 'média' ? 1 : 0;
   if ((documentDiagnostics?.extraction_confidence ?? 0) >= 75) points += 1;
   const supported = requirements.filter((item) => item.status === 'comprovado').length;
-  const ambiguous = requirements.filter((item) => item.semantic_review_suggested).length;
   if (requirements.length >= 3 && supported / requirements.length >= 0.5) points += 1;
-  if (ambiguous > Math.max(2, requirements.length * 0.4)) points -= 1;
   if (points >= 4) return 'alta';
   if (points >= 2) return 'média';
   return 'baixa';
 }
 
-export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) {
-  const requirements = mergeSemanticEvidence(
-    analysis.analise_aderencia?.requisitos || [],
-    semanticResult?.matches || [],
-  );
+export function buildAtsAnalysis(analysis, documentDiagnostics) {
+  const requirements = (analysis.analise_aderencia?.requisitos || []).map((item) => ({ ...item }));
   const mandatory = requirements.filter((item) => item.category === 'obrigatório');
   const desirable = requirements.filter((item) => item.category === 'desejável');
   const mandatoryScore = scoreRequirements(mandatory) ?? scoreRequirements(requirements) ?? 0;
@@ -67,7 +44,7 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
   const readabilityScore = documentDiagnostics?.score ?? 0;
 
   const factors = [
-    { key: 'document_readability', label: 'Leitura técnica do documento', score: readabilityScore, weight: 20 },
+    { key: 'document_readability', label: 'Clareza e estrutura do documento', score: readabilityScore, weight: 20 },
     { key: 'requirements', label: 'Requisitos obrigatórios e desejáveis', score: requirementsScore, weight: 45 },
     { key: 'evidence_quality', label: 'Qualidade das evidências', score: evidenceScore, weight: 20 },
     { key: 'seniority', label: 'Adequação de senioridade', score: seniorityScore, weight: 10 },
@@ -87,10 +64,10 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
 
   return {
     ...analysis,
-    analysis_version: '2.1',
+    analysis_version: '3.0',
     analise_aderencia: { ...analysis.analise_aderencia, requisitos: finalRequirements, resumo: summary },
     ats_analysis: {
-      label: 'Compatibilidade ATS estimada',
+      label: 'Leitura de compatibilidade',
       overall_score: overallScore,
       job_match_score: jobMatchScore,
       document_readability: documentDiagnostics,
@@ -100,16 +77,7 @@ export function buildAtsAnalysis(analysis, documentDiagnostics, semanticResult) 
         documentDiagnostics,
         requirements: finalRequirements,
       }),
-      disclaimer: 'Esta é uma estimativa explicada. Sistemas ATS usam regras diferentes e não existe uma pontuação universal.',
-    },
-    semantic_analysis: {
-      status: semanticResult?.status || 'unavailable',
-      model: semanticResult?.model || null,
-      processed_locally: true,
-      matches: semanticResult?.matches || [],
-      notice: semanticResult?.status === 'completed'
-        ? 'A leitura por contexto foi feita no seu navegador e usada apenas para sugerir trechos que merecem revisão.'
-        : 'A leitura por contexto não ficou disponível. A comparação principal continuou funcionando normalmente.',
+      disclaimer: 'Esta leitura organiza sinais que ajudam a entender a aderência do currículo. Ela não reproduz nem prevê a decisão de um sistema de recrutamento.',
     },
   };
 }

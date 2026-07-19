@@ -18,30 +18,26 @@ function baseAnalysis(status = 'ausente') {
   };
 }
 
-test('mantém o score ATS explicado dentro da faixa de 0 a 100', () => {
+test('mantém a leitura de compatibilidade dentro da faixa de 0 a 100', () => {
   const result = buildAtsAnalysis(
     baseAnalysis('comprovado'),
     analyzePlainTextDocument('Nome nome@email.com. Experiência profissional. Formação. Competências. Resumo profissional.'),
-    { status: 'completed', model: 'teste', matches: [{ key: 'obrigatório:Liderança de equipe', similarity: 0.9, margin: 0.12, evidence: 'Coordenei uma equipe.' }] },
   );
 
-  assert.equal(result.analysis_version, '2.1');
+  assert.equal(result.analysis_version, '3.0');
   assert.ok(result.ats_analysis.overall_score >= 0 && result.ats_analysis.overall_score <= 100);
-  assert.equal(result.semantic_analysis.processed_locally, true);
+  assert.equal(result.ats_analysis.label, 'Leitura de compatibilidade');
 });
 
-test('similaridade semântica não transforma evidência ausente em comprovada', () => {
+test('mantém requisito ausente quando não há evidência', () => {
   const result = buildAtsAnalysis(
     baseAnalysis('ausente'),
     analyzePlainTextDocument('Coordenei cinco pessoas em entregas multidisciplinares. E-mail: pessoa@exemplo.com.'),
-    { status: 'completed', model: 'teste', matches: [{ key: 'obrigatório:Liderança de equipe', similarity: 0.88, margin: 0.11, evidence: 'Coordenei cinco pessoas em entregas multidisciplinares.' }] },
   );
 
   const requirement = result.analise_aderencia.requisitos[0];
   assert.equal(requirement.status, 'ausente');
-  assert.equal(requirement.semantic_contribution, false);
-  assert.equal(requirement.semantic_review_suggested, true);
-  assert.equal(requirement.semantic_evidence, 'Coordenei cinco pessoas em entregas multidisciplinares.');
+  assert.equal(requirement.evidence, null);
 });
 
 test('diagnóstico de texto alerta quando faltam seções e contato', () => {

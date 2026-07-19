@@ -1,8 +1,6 @@
 export function validateCurriculoVagaInput(body) {
   const curriculo = typeof body.curriculo === 'string' ? body.curriculo.trim() : '';
   const vaga = typeof body.vaga === 'string' ? body.vaga.trim() : '';
-  const empresaManual = typeof body.empresaManual === 'string' ? body.empresaManual.trim() : null;
-  const usarContextoPublico = body.usarContextoPublico === true;
 
   if (!curriculo || !vaga) {
     return {
@@ -11,7 +9,7 @@ export function validateCurriculoVagaInput(body) {
     };
   }
 
-  if (curriculo.length > 50000 || vaga.length > 30000 || (empresaManual?.length ?? 0) > 120) {
+  if (curriculo.length > 50000 || vaga.length > 30000) {
     return {
       valid: false,
       error: 'O conteúdo enviado excede o limite permitido.',
@@ -21,7 +19,7 @@ export function validateCurriculoVagaInput(body) {
 
   return {
     valid: true,
-    data: { curriculo, vaga, empresaManual, usarContextoPublico },
+    data: { curriculo, vaga },
   };
 }
 

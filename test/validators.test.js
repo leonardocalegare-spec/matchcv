@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateCurriculoVagaInput } from '../api/validators.js';
 
-test('normaliza a autorização de contexto público como booleano estrito', () => {
+test('mantém apenas currículo e vaga no contrato validado', () => {
   const result = validateCurriculoVagaInput({ curriculo: 'CV', vaga: 'Vaga', usarContextoPublico: 'true' });
   assert.equal(result.valid, true);
-  assert.equal(result.data.usarContextoPublico, false);
+  assert.deepEqual(result.data, { curriculo: 'CV', vaga: 'Vaga' });
 });
 
 test('recusa conteúdo acima do limite', () => {

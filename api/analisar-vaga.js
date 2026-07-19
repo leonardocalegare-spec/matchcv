@@ -1,5 +1,5 @@
 import { normalizeRequestBody, validateCurriculoVagaInput } from './validators.js';
-import { orchestrateAnalysis } from './analysisOrchestrator.js';
+import { analisarCurriculoComAgente } from './careerAgent.js';
 import { sendJson } from './shared/http.js';
 
 export default async function handler(req, res) {
@@ -18,8 +18,8 @@ export default async function handler(req, res) {
       return;
     }
 
-    const { curriculo, vaga, empresaManual, usarContextoPublico } = validation.data;
-    const analysis = await orchestrateAnalysis(curriculo, vaga, empresaManual, { usarContextoPublico });
+    const { curriculo, vaga } = validation.data;
+    const analysis = analisarCurriculoComAgente(curriculo, vaga);
 
     sendJson(res, 200, analysis);
   } catch (error) {

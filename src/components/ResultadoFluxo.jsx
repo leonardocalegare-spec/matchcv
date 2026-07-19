@@ -24,7 +24,7 @@ export default function ResultadoFluxo({ resultado, onNovaAnalise }) {
         <header className="results-heading">
           <p className="eyebrow">Resultado personalizado</p>
           <h2 id="results-title">Seu currículo diante desta vaga</h2>
-          <p>Veja a estimativa de leitura ATS e use as orientações abaixo para chegar mais preparado à entrevista.</p>
+          <p>Veja como o currículo responde ao que a vaga pede e use as orientações para chegar mais preparado à entrevista.</p>
         </header>
 
         <AtsOverview resultado={resultado} />

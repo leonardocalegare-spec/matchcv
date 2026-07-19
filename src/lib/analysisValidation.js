@@ -78,16 +78,6 @@ export function validateAnalysisPayload(payload) {
     return { valid: false, message: 'A matriz de aderencia veio incompleta.' };
   }
 
-  if (payload.llm_analysis) {
-    const llm = payload.llm_analysis;
-    const validTips = Array.isArray(llm.dicas) && llm.dicas.every((tip) => (
-      isObject(tip) && hasString(tip, 'dica') && hasString(tip, 'motivo') && ['mercado', 'vaga', 'empresa'].includes(tip.fonte)
-    ));
-    if (!isObject(llm) || !validTips || !hasString(llm, 'reformulacao_sugerida') || !hasArray(llm, 'faltando_no_curriculo')) {
-      return { valid: false, message: 'O complemento do Ollama veio incompleto.' };
-    }
-  }
-
   if (payload.ats_analysis) {
     const ats = payload.ats_analysis;
     if (
@@ -96,7 +86,7 @@ export function validateAnalysisPayload(payload) {
       !Array.isArray(ats.factors) ||
       !isObject(ats.document_readability)
     ) {
-      return { valid: false, message: 'A análise ATS veio incompleta.' };
+      return { valid: false, message: 'A leitura de compatibilidade veio incompleta.' };
     }
   }
 

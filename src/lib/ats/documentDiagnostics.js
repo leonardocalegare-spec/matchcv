@@ -39,7 +39,7 @@ function buildDiagnostics({ text, pages = 1, source = 'text', items = [], possib
   const warnings = [];
   if (!searchable) warnings.push('O documento tem pouco texto pesquisável e pode ser um PDF escaneado.');
   if (possibleColumns) warnings.push('O arquivo pode usar múltiplas colunas; confirme se a ordem de leitura ficou correta.');
-  if (fragmentationRatio >= 0.35) warnings.push('O texto foi extraído de forma fragmentada, o que pode dificultar a leitura por ATS.');
+  if (fragmentationRatio >= 0.35) warnings.push('O texto foi extraído de forma fragmentada, o que pode dificultar a leitura automática.');
   if (!sections.experiencia) warnings.push('A seção de experiência profissional não foi identificada com clareza.');
   if (!sections.formacao) warnings.push('A seção de formação não foi identificada com clareza.');
   if (!hasContact) warnings.push('E-mail ou telefone não foram identificados no conteúdo analisado.');

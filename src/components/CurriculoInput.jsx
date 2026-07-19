@@ -89,7 +89,7 @@ export default function CurriculoInput({
         </label>
         <details>
           <summary>Como seus dados são usados</summary>
-          <p>O PDF e a comparação semântica são processados no navegador. O texto é enviado à API da aplicação apenas durante a análise determinística e não é salvo em banco de dados. Informações públicas da empresa só são consultadas quando você autoriza na próxima etapa.</p>
+          <p>O PDF é lido no navegador. O texto é enviado apenas à API da própria aplicação durante a análise e não é salvo em banco de dados. Nenhum provedor externo recebe seu currículo ou a vaga.</p>
         </details>
       </div>
     </div>
