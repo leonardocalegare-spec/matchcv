@@ -1,92 +1,143 @@
 # Vaga Clara
 
-Vaga Clara é uma ferramenta gratuita para comparar uma vaga com evidências reais do currículo. Ela organiza requisitos, mostra o que já está claro, aponta o que merece atenção e ajuda na preparação para a entrevista sem inventar experiências.
+<p align="center">
+  <img src="public/favicon.svg" width="88" alt="Símbolo do Vaga Clara" />
+</p>
 
-O projeto funciona sem serviços pagos, chaves de API, modelos de linguagem ou consultas externas.
+<p align="center">
+  <strong>Compare uma vaga com evidências reais do currículo — com critérios visíveis, privacidade e sem inventar experiências.</strong>
+</p>
 
-## O que a aplicação faz
+<p align="center">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" />
+  <img alt="Vite 8" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" />
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-ESM-339933?logo=nodedotjs&logoColor=white" />
+  <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-22C55E" />
+</p>
 
-- Importa currículos em PDF ou aceita texto colado.
-- Identifica requisitos obrigatórios, desejáveis, senioridade e competências na descrição da vaga.
-- Relaciona cada requisito a uma evidência encontrada no currículo.
-- Classifica a evidência como comprovada, parcial ou ausente.
-- Avalia clareza, estrutura, contato, seções e extração do documento.
-- Explica a composição da compatibilidade com fatores e pesos visíveis.
-- Sugere prioridades e perguntas para a entrevista em linguagem natural.
-- Mantém alertas de honestidade para evitar informações inventadas.
+## Visão geral
 
-## Stack atual
+O **Vaga Clara** transforma currículo e descrição de vaga em um diagnóstico estruturado de aderência. Em vez de entregar apenas uma porcentagem, a aplicação mostra os requisitos identificados, a evidência encontrada para cada um, os fatores que compõem a estimativa e as ações que podem fortalecer a candidatura.
 
-- React 19 e React DOM 19.
-- Vite 8 com plugin oficial React.
-- JavaScript com ES Modules no frontend e backend.
-- Node.js HTTP para API, autenticação e servidor de produção.
-- `pdfjs-dist` para leitura e diagnóstico de PDFs no navegador.
-- `lucide-react` para iconografia.
-- Oxlint para análise estática.
-- Node Test Runner para testes automatizados.
+O processamento é determinístico e executado pela própria aplicação. Não há dependência de modelos de linguagem, APIs pagas ou serviços externos para produzir a análise.
 
-## Como rodar
+## Destaques técnicos
+
+- **Evidência antes de palavra-chave:** cada requisito é classificado como comprovado, parcial ou ausente.
+- **Score explicável:** compatibilidade, evidências, senioridade, palavras-chave e legibilidade têm pesos visíveis.
+- **Diagnóstico de PDF:** avalia extração, seções, dados de contato, possível uso de colunas e legibilidade.
+- **Análise orientada ao cargo:** perfis de função adaptam o foco das recomendações e da entrevista.
+- **Escrita responsável:** sugestões usam somente informações encontradas e mantêm placeholders quando falta contexto real.
+- **Privacidade por padrão:** o PDF é processado no navegador e o conteúdo não é persistido pela API.
+- **Contrato validado:** o frontend rejeita respostas incompletas antes de renderizar os resultados.
+- **Experiência acessível:** fluxo guiado, estados de carregamento e erro, foco gerenciado e layout responsivo.
+
+## Fluxo da aplicação
+
+```text
+Currículo (texto ou PDF)
+        │
+        ├── diagnóstico estrutural no navegador
+        │
+        ▼
+Descrição da vaga ──► API Node.js ──► análise heurística determinística
+                                             │
+                                             ▼
+                           contrato de resposta validado no cliente
+                                             │
+                                             ▼
+                    score explicado + matriz de evidências + entrevista
+```
+
+## Como a compatibilidade é calculada
+
+A estimativa combina cinco dimensões. Os pesos são definidos em `src/lib/ats/scoring.js` e ficam disponíveis na interface:
+
+| Dimensão | O que observa |
+| --- | --- |
+| Requisitos | Cobertura de itens obrigatórios e desejáveis |
+| Evidências | Qualidade dos trechos que sustentam cada competência |
+| Senioridade | Alinhamento entre o nível indicado pela vaga e pelo currículo |
+| Palavras-chave | Competências detectadas nos dois textos |
+| Legibilidade | Estrutura e qualidade de extração do documento |
+
+> A pontuação é uma estimativa transparente para apoiar a revisão do currículo. Ela não reproduz um ATS específico, não prevê decisões de recrutadores e não deve ser interpretada como garantia de aprovação.
+
+## Arquitetura
+
+```text
+src/
+├── components/               # fluxo, entradas, resultados e preparação
+├── lib/
+│   ├── ats/                  # diagnóstico do documento e composição do score
+│   ├── analysisApi.js        # chamada, timeout e tratamento da resposta
+│   ├── analysisValidation.js # contrato de dados entre API e interface
+│   └── pdfParser.js          # extração e leitura do PDF no navegador
+├── styles/app.css            # sistema visual e responsividade
+└── App.jsx                   # estado e navegação do fluxo principal
+
+api/
+├── analysis/                 # léxico utilizado na extração
+├── data/                     # competências e perfis de cargo
+├── shared/                   # HTTP e detecção de empresa
+├── analisar-vaga.js          # endpoint POST /api/analisar-vaga
+├── careerAgent.js            # motor determinístico de análise
+├── validators.js             # limites e validação da entrada
+└── server.js                 # API e arquivos estáticos em produção
+```
+
+### Decisões de engenharia
+
+1. **Determinismo:** a mesma entrada produz uma análise reproduzível, adequada para testes e depuração.
+2. **Separação de responsabilidades:** extração, validação, score, interface e transporte HTTP evoluem de forma independente.
+3. **Falha segura:** timeout, limite de payload, JSON inválido e respostas incompletas geram mensagens controladas.
+4. **Sem invenção de dados:** recomendações distinguem evidência real de lacunas e nunca completam fatos ausentes.
+5. **Baixo custo operacional:** a solução funciona sem chaves secretas, banco de dados ou provedor de IA.
+
+## Execução local
+
+### Pré-requisitos
+
+- Node.js 20.19 ou superior (ou 22.12+).
+- npm 10 ou superior.
 
 ```bash
+git clone https://github.com/leonardocalegare-spec/VagaClara.git
+cd VagaClara
 npm install
 npm run dev
 ```
 
-O Vite normalmente abre o frontend em `http://127.0.0.1:5173/`. Para executar a API local separadamente:
+O ambiente de desenvolvimento fica disponível normalmente em `http://127.0.0.1:5173`. O Vite integra o endpoint local durante o desenvolvimento.
+
+Para executar frontend e API em processos separados:
 
 ```bash
+npm run dev
 npm run dev:api
 ```
 
-Para testar a distribuição completa no mesmo processo:
+Para validar o build servido pela aplicação Node.js:
 
 ```bash
 npm run build
 npm run start
 ```
 
-## Scripts
+## API
 
-```bash
-npm run dev       # frontend em desenvolvimento
-npm run dev:api   # API local em desenvolvimento
-npm run lint      # análise estática
-npm test          # testes automatizados
-npm run build     # build de produção
-npm run preview   # prévia do build pelo Vite
-npm run start     # build e API no mesmo servidor Node.js
+### `POST /api/analisar-vaga`
+
+```json
+{
+  "curriculo": "Texto extraído ou colado pelo usuário",
+  "vaga": "Descrição completa da oportunidade"
+}
 ```
 
-## Arquitetura
+A resposta contém análise da vaga, score detalhado, matriz de requisitos, sugestões de currículo, preparação para entrevista e metadados de confiança. O contrato consumido pela interface está documentado no próprio código em `src/lib/analysisValidation.js`.
 
-- `src/App.jsx`: controla o fluxo currículo → vaga → resultado.
-- `src/components/`: entradas, boas-vindas, resultados e preparação para entrevista.
-- `src/styles/app.css`: estilos e comportamento responsivo da interface.
-- `src/lib/analysisApi.js`: comunicação com o endpoint e composição da leitura final.
-- `src/lib/analysisValidation.js`: valida o contrato devolvido pela API.
-- `src/lib/ats/documentDiagnostics.js`: analisa a clareza técnica do documento.
-- `src/lib/ats/scoring.js`: calcula e explica a compatibilidade.
-- `api/analisar-vaga.js`: endpoint `POST /api/analisar-vaga`.
-- `api/careerAgent.js`: extração determinística, evidências e recomendações.
-- `api/analysis/`: léxico e perfis usados por diferentes famílias de cargos.
-- `api/auth.js` e `api/shared/`: autenticação e utilitários compartilhados.
-- `api/server.js`: entrega o build e a API no mesmo processo.
-- `test/`: testes executados pelo Node Test Runner.
-
-## Privacidade
-
-O PDF é lido no navegador. Durante a análise, o texto do currículo e da vaga é enviado somente à API da própria aplicação e não é persistido em banco de dados. O currículo só fica no `localStorage` quando o usuário marca essa opção. Nenhum provedor externo recebe os textos.
-
-## Como interpretar a compatibilidade
-
-A porcentagem é uma leitura explicada da relação entre o documento e a vaga. Ela combina clareza do arquivo, requisitos encontrados, qualidade das evidências, senioridade e palavras-chave.
-
-Ela não simula um produto específico de ATS, não prevê decisões de recrutadores e não representa uma pontuação universal. Os fatores e pesos ficam visíveis para que o usuário entenda de onde o resultado veio.
-
-## Validação
-
-Antes de publicar uma mudança, execute:
+## Qualidade e validação
 
 ```bash
 npm run lint
@@ -95,6 +146,25 @@ npm run build
 git diff --check
 ```
 
-## Autoria
+A suíte automatizada cobre validação de entrada, limites HTTP, classificação de perfis, cálculo ATS, senioridade, extração de requisitos e compromisso de não inventar evidências.
 
-Noumena Labs — Leonardo Henrique
+## Privacidade
+
+- O texto do PDF é extraído no navegador.
+- Currículo e vaga são enviados somente à API da própria aplicação durante a análise.
+- A API não grava o conteúdo em banco de dados.
+- O currículo só é mantido no `localStorage` quando o usuário ativa essa opção.
+- Nenhum provedor externo recebe os textos.
+
+## Limitações conhecidas
+
+- A análise é heurística e depende da clareza dos textos fornecidos.
+- PDFs digitalizados como imagem exigem OCR antes da importação.
+- Formatações complexas ou múltiplas colunas podem reduzir a qualidade da extração.
+- O sistema não consulta o mercado, a empresa ou dados externos sobre a vaga.
+
+## Licença e autoria
+
+Distribuído sob a [licença MIT](LICENSE).
+
+Desenvolvido por **Leonardo Henrique**, sob a assinatura **Noumena Labs**.

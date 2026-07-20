@@ -1,7 +1,7 @@
 {
   "name": "vagaclara",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Vaga Clara: compare requisitos da vaga com evidências reais do currículo.",
   "type": "module",
   "keywords": [
@@ -10,11 +10,15 @@
     "react",
     "vite",
     "career",
+    "ats-analysis",
     "job-matching",
     "local-first"
   ],
   "author": "Leonardo Henrique | Noumena Labs",
   "license": "MIT",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "dev:api": "node api/dev-server.js",
